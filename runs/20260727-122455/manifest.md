@@ -83,3 +83,18 @@
 - FPS: 34–60 under SwiftShader software rendering (adaptive DPR scaling active); hardware GPU substantially higher
 - Support files (runtime dir only): serve.mjs (port 8119), drive.mjs (CDP playtest driver), shots\ (evidence), .probe\ (base-version probes)
 - Timestamp: 2026-07-27 15:55 -04:00
+
+## game v1 — Independent live verification (ship gate)
+- Date: 2026-07-27T16:05-04:00 · Verifier: supervisor session via Playwright MCP against https://vanguard-golf-game-v1.vercel.app (fresh browser profile, no prior state)
+- Runtime/deploy integrity: `runtime/vanguard-golf-game-v1/index.html` and `deploy/vanguard-golf-game-v1/index.html` hash-identical (SHA256 `C314FB555B3A7DAEE75C78626ED66D809A3D537E660DB5424C943A3F6783D6D3`) — committed code is exactly what is live
+- Title: renders over live flyby, full menu (PLAY / COURSE SELECT / FREE ROAM / SETTINGS), 51 FPS at load
+- Course select: 3 hole cards with canvas thumbnails + BEST slots (Emerald Rise par 3, Neon Hollow par 4, Aurora Dunes par 5)
+- Play: real stroke via Space charge/release — mode aim → flight (strokes 1, ball airborne with velocity) → roll (legitimate downhill roll on hilly terrain) → settled back to aim
+- Pause: Esc opens PAUSED card (RESUME / FREE ROAM / RESTART HOLE / QUIT TO MENU), world frozen
+- Free roam: scene `roam`, WASD moved camera pos (-7.98,2.75,2.86) → (-6.41,2.40,2.22) while world frozen
+- Scorecard: scene `score`, full 3-hole table + round total + NEXT HOLE / REPLAY HOLE / MENU
+- API: getScene/goToScene/getState/getScore/setControl all responded correctly
+- Persistence round-trip: setControl('glass', 0.5) → `vanguardGolfGame.v1` written → page reload → glass restored to 0.5
+- Console: 0 messages (0 errors, 0 warnings) across the whole session
+- Evidence: `evidence/game-v1-verify/verify-01-title.png` … `verify-05-scorecard.png`
+- Result: **PASS** — no defects found, no fix/redeploy needed; game v1 shipped
