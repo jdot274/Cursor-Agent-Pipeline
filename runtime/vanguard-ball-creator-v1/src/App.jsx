@@ -10,7 +10,7 @@ const SWATCHES = ['#3aff8e', '#00e5ff', '#1a8cff', '#6ad0ff', '#c04df0', '#ff9d2
 
 const GROUPS = [
   { title: 'Tournament', ids: ['emerald', 'ghost', 'oilslick', 'nebula', 'molten', 'pearl', 'chrome', 'holo'] },
-  { title: 'Studio / Collage', ids: ['organic', 'plasma', 'points', 'topo', 'cel', 'energy', 'vault'] },
+  { title: 'Studio / Collage', ids: ['organic', 'plasma', 'points', 'topo', 'cel', 'energy', 'vault', 'aether'] },
 ]
 
 export default function App() {

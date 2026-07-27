@@ -62,4 +62,5 @@ export const PRESET_KNOBS = {
   cel: ['intensity', 'glow', 'rimPower', 'roughness'],
   energy: ['intensity', 'glow', 'noiseScale', 'scanSpeed', 'displacement'],
   vault: ['intensity', 'glow', 'noiseScale', 'scanSpeed', 'thickness'],
+  aether: ['intensity', 'glow', 'noiseScale', 'scanSpeed', 'rimPower'],
 }

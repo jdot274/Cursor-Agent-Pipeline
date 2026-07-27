@@ -3,10 +3,10 @@ export const BALL_KEY = 'vanguardGolf.ball.v1'
 
 export const DEFAULT_CONFIG = {
   v: 1,
-  preset: 'emerald',
-  accent: '#3aff8e',
+  preset: 'aether',
+  accent: '#00d4ff',
   speed: 1.0,
-  name: 'VANGUARD ONE',
+  name: 'AETHER ONE',
 }
 
 export function loadBallConfig() {
