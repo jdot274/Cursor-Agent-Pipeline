@@ -143,6 +143,35 @@ input[type='range'] {
 }
 .cta:hover { transform: translateY(-1px); box-shadow: 0 12px 34px rgba(58, 255, 142, 0.5); }
 
+.ghost-btn {
+  padding: 10px;
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--dim);
+  font: 700 11px 'Sora', sans-serif;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+}
+.ghost-btn:hover { color: var(--ink); border-color: rgba(58, 255, 142, 0.35); }
+
+.engine-pane {
+  position: absolute;
+  left: 20px;
+  bottom: 56px;
+  width: 280px;
+  max-height: min(52vh, 520px);
+  overflow: auto;
+  z-index: 20;
+  font-family: 'Sora', system-ui, sans-serif;
+}
+.engine-pane .tp-dfwv {
+  min-width: 260px !important;
+  max-width: 280px !important;
+}
+.engine-pane::-webkit-scrollbar { width: 6px; }
+.engine-pane::-webkit-scrollbar-thumb { background: rgba(120, 255, 190, 0.18); border-radius: 3px; }
+
 .toast {
   position: absolute;
   bottom: 84px;

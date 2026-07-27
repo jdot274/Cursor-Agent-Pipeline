@@ -98,3 +98,13 @@
 - Console: 0 messages (0 errors, 0 warnings) across the whole session
 - Evidence: `evidence/game-v1-verify/verify-01-title.png` … `verify-05-scorecard.png`
 - Result: **PASS** — no defects found, no fix/redeploy needed; game v1 shipped
+
+## ball lab + game v2 — Shader engine + collage presets
+- Date: 2026-07-27T18:17-04:00
+- Live game: https://vanguard-golf-game-v2.vercel.app
+- Live Ball Lab: https://vanguard-golf-game-v2.vercel.app/creator/
+- Stack: r3f + drei + postprocessing + N8AO + AgX + Tweakpane engine panel + three-custom-shader-material
+- Presets: 14 total (8 tournament hero + 6 collage: organic/plasma/points/topo/cel/energy)
+- Engine: live Tweakpane design editor (exposure/bloom/ao/grain/displace/noise/glow/rim) with save/reset/copy JSON
+- Game v2: BALL LAB menu entry, reads `vanguardGolf.ball.v1` accent into `uBallTint`
+- Deploy: `deploy/vanguard-golf-game-v2/` (game root + /creator/) · project 274/vanguard-golf-game-v2

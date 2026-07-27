@@ -99,17 +99,24 @@ export const CHORD_GLSL = /* glsl */ `
   }
 `
 
-// Varyings for CSM materials (vCenter = world-space ball center).
+// Varyings for CSM materials (vCenter = world-space ball center,
+// vM0..2 = model rotation columns since modelMatrix is vertex-stage only).
 export const VARYINGS_VERT = /* glsl */ `
   varying vec3 vObjPos;
   varying vec3 vWorldPos;
   varying vec3 vWorldNormal;
   varying vec3 vCenter;
+  varying vec3 vM0;
+  varying vec3 vM1;
+  varying vec3 vM2;
   void main() {
     vObjPos = position;
     vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;
     vWorldNormal = normalize(mat3(modelMatrix) * normal);
     vCenter = (modelMatrix * vec4(0.0, 0.0, 0.0, 1.0)).xyz;
+    vM0 = modelMatrix[0].xyz;
+    vM1 = modelMatrix[1].xyz;
+    vM2 = modelMatrix[2].xyz;
   }
 `
 
@@ -118,6 +125,10 @@ export const VARYINGS_FRAG_HEADER = /* glsl */ `
   varying vec3 vWorldPos;
   varying vec3 vWorldNormal;
   varying vec3 vCenter;
+  varying vec3 vM0;
+  varying vec3 vM1;
+  varying vec3 vM2;
+  #define V_MODEL_ROT mat3(vM0, vM1, vM2)
 `
 
 // Standalone (non-CSM) ShaderMaterial vertex stage with the same varyings.
