@@ -120,6 +120,25 @@ switch (cmd) {
     console.log("held", ms, "ms at", x, y);
     break;
   }
+  case "consolecheck": {
+    const logs = [];
+    ws.addEventListener("message", (ev) => {
+      const m = JSON.parse(ev.data);
+      if (m.method === "Runtime.consoleAPICalled")
+        logs.push(`${m.params.type}: ${(m.params.args || []).map((a) => a.value ?? a.description ?? "").join(" ")}`);
+      if (m.method === "Runtime.exceptionThrown")
+        logs.push(`EXCEPTION: ${m.params.exceptionDetails?.text} ${m.params.exceptionDetails?.exception?.description ?? ""}`);
+      if (m.method === "Log.entryAdded")
+        logs.push(`${m.params.entry.level}: ${m.params.entry.text}`);
+    });
+    await send("Runtime.enable");
+    await send("Log.enable");
+    await send("Page.enable");
+    await send("Page.navigate", { url: args[0] });
+    await sleep(8000);
+    console.log(logs.length ? logs.join("\n") : "CONSOLE CLEAN (0 messages)");
+    break;
+  }
   case "playhole": {
     // Plays the current hole to completion using real CDP key input.
     const getState = async () => {

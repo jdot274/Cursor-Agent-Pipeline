@@ -68,3 +68,18 @@
 - Master: C:\Users\joeyw\Documents\Cursor-Agent-Pipeline\runtime\vanguard-golf-sdf-v5\index.html
 - Deploy dir: C:\Users\joeyw\Documents\Cursor-Agent-Pipeline\deploy\vanguard-golf-sdf-v5\
 - Timestamp: 2026-07-27 14:17 -04:00
+
+## game v1 — Playable multi-scene game shell (vanguard-golf-game-v1)
+- Live URL: https://vanguard-golf-game-v1.vercel.app (production, READY, aliased)
+- Immutable URL: https://vanguard-golf-game-v1-6e17qd6dg-274.vercel.app · Deployment ID: dpl_G3g3AEoP6eTwFH3RpeQx9R7uN8Zq (superseded by final CSS-fix deploy 6e17qd6dg)
+- Vercel project: 274/vanguard-golf-game-v1 (new project; no prior deploy touched)
+- Base: deployed v5 master (vanguard-golf-sdf-v5.vercel.app) — newest live deploy per probe; local v2–v5 runtime files untouched
+- Master: C:\Users\joeyw\Documents\Cursor-Agent-Pipeline\runtime\vanguard-golf-game-v1\index.html (single-file, zero deps, inline GLSL/CSS/JS)
+- Deploy dir: C:\Users\joeyw\Documents\Cursor-Agent-Pipeline\deploy\vanguard-golf-game-v1\
+- Scenes: title (live flyby menu) · course select (3 procedural holes w/ canvas thumbnails) · play (drag-aim + hold-release meter, putt mode, CPU physics mirroring GLSL terrain) · pause / free roam (Esc, WASD + wheel) · result / scorecard (grades, ± vs par, localStorage best per hole + best round)
+- Holes: 1 Emerald Rise (par 3) · 2 Neon Hollow (par 4) · 3 Aurora Dunes (par 5, gold accent) — per-hole seed/amp/accent/cup/tee uniforms
+- API: window.RelayVanguardGolf extended with getScene(), goToScene(name), getScore() (v1 getState/setControl preserved)
+- Playtest evidence: full round completed on live URL via CDP driver (drive.mjs) — hole 1: 4 (bogey), hole 2: 2 (eagle), hole 3: 1 (ace), round total 7 (−5); persistence verified ({"best":{"1":4,"2":2,"3":1},"bestTotal":7}); console clean (0 messages); screenshots in runtime\vanguard-golf-game-v1\shots\
+- FPS: 34–60 under SwiftShader software rendering (adaptive DPR scaling active); hardware GPU substantially higher
+- Support files (runtime dir only): serve.mjs (port 8119), drive.mjs (CDP playtest driver), shots\ (evidence), .probe\ (base-version probes)
+- Timestamp: 2026-07-27 15:55 -04:00
