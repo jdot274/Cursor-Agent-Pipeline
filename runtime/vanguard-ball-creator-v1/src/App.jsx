@@ -6,11 +6,11 @@ import { PRESETS } from './balls/presets.jsx'
 import { loadBallConfig, saveBallConfig } from './store.js'
 import { loadEngine } from './engine.js'
 
-const SWATCHES = ['#3aff8e', '#00e5ff', '#ff9d2e', '#c04df0', '#ff4d6d', '#f4f0e6', '#3a7dff', '#ff2a6a']
+const SWATCHES = ['#3aff8e', '#00e5ff', '#1a8cff', '#6ad0ff', '#c04df0', '#ff9d2e', '#ff4d6d', '#f4f0e6']
 
 const GROUPS = [
   { title: 'Tournament', ids: ['emerald', 'ghost', 'oilslick', 'nebula', 'molten', 'pearl', 'chrome', 'holo'] },
-  { title: 'Studio / Collage', ids: ['organic', 'plasma', 'points', 'topo', 'cel', 'energy'] },
+  { title: 'Studio / Collage', ids: ['organic', 'plasma', 'points', 'topo', 'cel', 'energy', 'vault'] },
 ]
 
 export default function App() {

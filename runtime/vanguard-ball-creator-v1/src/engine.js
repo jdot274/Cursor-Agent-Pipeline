@@ -61,4 +61,5 @@ export const PRESET_KNOBS = {
   topo: ['intensity', 'noiseScale', 'glow', 'rimPower'],
   cel: ['intensity', 'glow', 'rimPower', 'roughness'],
   energy: ['intensity', 'glow', 'noiseScale', 'scanSpeed', 'displacement'],
+  vault: ['intensity', 'glow', 'noiseScale', 'scanSpeed', 'thickness'],
 }

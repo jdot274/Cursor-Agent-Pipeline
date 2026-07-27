@@ -595,6 +595,7 @@ function HoloBall({ accent, speed }) {
 }
 
 import { COLLAGE_PRESETS } from './collage.jsx'
+import { VAULT_PRESET } from './vault.jsx'
 
 export const PRESETS = {
   emerald: {
@@ -654,4 +655,5 @@ export const PRESETS = {
     Component: HoloBall,
   },
   ...COLLAGE_PRESETS,
+  ...VAULT_PRESET,
 }
