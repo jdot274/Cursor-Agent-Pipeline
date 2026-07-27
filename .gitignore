@@ -37,6 +37,14 @@ Desktop.ini
 /[Bb]uilds/
 /[Ll]ogs/
 /[Uu]ser[Ss]ettings/
+# Unity projects nested at any depth (e.g. unity/<Project>/Library)
+unity/**/[Ll]ibrary/
+unity/**/[Tt]emp/
+unity/**/[Oo]bj/
+unity/**/[Ll]ogs/
+unity/**/[Uu]ser[Ss]ettings/
+unity/**/[Bb]uild/
+unity/**/[Bb]uilds/
 *.csproj
 *.unityproj
 *.sln
