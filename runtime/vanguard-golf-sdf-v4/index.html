@@ -1,0 +1,1281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Relay · VanguardGolfSDF_v2</title>
+<meta name="vanguard-variant" content="VanguardGolfSDF_v2">
+<style>
+  :root{
+    color-scheme:dark;
+    --ink:#e9fff0; --muted:#7fa793; --line:#173026; --line2:#224634;
+    --panel:rgba(3,10,9,.80); --accent:#4dff9b; --warn:#ffd66b;
+  }
+  *{box-sizing:border-box}
+  html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#01050a;color:var(--ink);
+    font-family:Inter,ui-sans-serif,system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+  canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+  .hud{position:fixed;z-index:20;top:14px;left:14px;width:min(360px,calc(100vw - 28px));
+    padding:14px 15px 13px;border:1px solid var(--line2);border-radius:16px;background:var(--panel);
+    backdrop-filter:blur(26px) saturate(1.3);box-shadow:0 22px 70px #000c,0 0 0 1px #ffffff08 inset;
+    max-height:calc(100vh - 28px);overflow:auto;scrollbar-width:thin}
+  .hud::-webkit-scrollbar{width:6px}.hud::-webkit-scrollbar-thumb{background:#2a5540;border-radius:6px}
+  .top{display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .brand{font-weight:750;letter-spacing:-.025em;font-size:14px}
+  .brand span{color:var(--accent)}
+  .badge{font:700 8.5px/1 ui-monospace,monospace;letter-spacing:.11em;color:#a6ffd0;
+    border:1px solid #2c6247;border-radius:999px;padding:6px 8px;white-space:nowrap}
+  .grp{margin-top:11px;padding-top:9px;border-top:1px dashed var(--line)}
+  .grp:first-of-type{border-top:0;padding-top:0}
+  .grpname{font:700 8.5px/1 ui-monospace,monospace;letter-spacing:.14em;color:#5f8a72;margin-bottom:7px}
+  .controls{display:grid;grid-template-columns:66px 1fr 40px;gap:6px 8px;align-items:center;
+    font-size:10.5px;color:var(--muted)}
+  .controls label{white-space:nowrap;letter-spacing:.01em}
+  input[type=range]{width:100%;height:3px;padding:0;accent-color:var(--accent);cursor:pointer}
+  output{font:600 9.5px/1 ui-monospace,monospace;color:#bfeed3;text-align:right}
+  .status{margin:11px 0 0;color:var(--muted);font:500 9.5px/1.5 ui-monospace,monospace}
+  .status b{color:#c9ffdd;font-weight:700}
+  .perf{display:flex;gap:9px;margin-top:9px;flex-wrap:wrap}
+  .chip{font:700 9px/1 ui-monospace,monospace;letter-spacing:.05em;color:#9fe9bd;
+    border:1px solid #234a37;background:#07160f99;border-radius:7px;padding:6px 8px}
+  .chip i{font-style:normal;color:#5f8a72}
+  .hint{position:fixed;z-index:10;right:16px;bottom:16px;color:#9fc3ae;background:#04100acc;
+    border:1px solid #1c3a2b;border-radius:999px;padding:9px 13px;
+    font:600 9.5px/1 ui-monospace,monospace;pointer-events:none;letter-spacing:.03em}
+  .err{position:fixed;inset:auto 16px 16px 16px;z-index:40;display:none;padding:12px 14px;
+    border:1px solid #6b2a2a;border-radius:12px;background:#180707ee;color:#ffb9b9;
+    font:500 11px/1.5 ui-monospace,monospace;white-space:pre-wrap;max-height:42vh;overflow:auto}
+</style>
+</head>
+<body>
+<canvas id="gl"></canvas>
+
+<section class="hud" aria-label="VanguardGolfSDF v2 controls">
+  <div class="top">
+    <div class="brand">VanguardGolfSDF · <span>v2</span></div>
+    <div class="badge">AAA STYLIZED · ADDITIVE</div>
+  </div>
+
+  <div class="grp">
+    <div class="grpname">V1 CONTRACT</div>
+    <div class="controls">
+      <label for="morph">Morph</label><input id="morph" type="range" min="0" max="1" step=".001" value="0.55"><output></output>
+      <label for="flow">Flow</label><input id="flow" type="range" min="0" max="1" step=".001" value="0.46"><output></output>
+      <label for="heat">Heat</label><input id="heat" type="range" min="0" max="1" step=".001" value="0.62"><output></output>
+      <label for="glass">Glass</label><input id="glass" type="range" min="0" max="1" step=".001" value="0.68"><output></output>
+    </div>
+  </div>
+
+  <div class="grp">
+    <div class="grpname">LIGHT &amp; ATMOSPHERE</div>
+    <div class="controls">
+      <label for="sunAz">Sun Az</label><input id="sunAz" type="range" min="0" max="6.283" step=".001" value="2.35"><output></output>
+      <label for="sunEl">Sun El</label><input id="sunEl" type="range" min="0.01" max="1.15" step=".001" value="0.165"><output></output>
+      <label for="fog">Fog</label><input id="fog" type="range" min="0" max="0.09" step=".0002" value="0.0265"><output></output>
+      <label for="sky">Sky</label><input id="sky" type="range" min="0" max="2" step=".001" value="1.0"><output></output>
+    </div>
+  </div>
+
+  <div class="grp">
+    <div class="grpname">SURFACE</div>
+    <div class="controls">
+      <label for="grassH">Grass H</label><input id="grassH" type="range" min="0" max="0.9" step=".001" value="0.40"><output></output>
+      <label for="grassD">Grass D</label><input id="grassD" type="range" min="1.5" max="16" step=".01" value="7.4"><output></output>
+      <label for="sss">Blade SSS</label><input id="sss" type="range" min="0" max="2" step=".001" value="1.0"><output></output>
+    </div>
+  </div>
+
+  <div class="grp">
+    <div class="grpname">POST</div>
+    <div class="controls">
+      <label for="bloom">Bloom</label><input id="bloom" type="range" min="0" max="2" step=".001" value="0.72"><output></output>
+      <label for="expo">Exposure</label><input id="expo" type="range" min="0.3" max="2.5" step=".001" value="1.06"><output></output>
+      <label for="dof">DoF</label><input id="dof" type="range" min="0" max="2" step=".001" value="0.65"><output></output>
+      <label for="grain">Grain</label><input id="grain" type="range" min="0" max="2" step=".001" value="0.7"><output></output>
+      <label for="vig">Vignette</label><input id="vig" type="range" min="0" max="1.5" step=".001" value="0.62"><output></output>
+    </div>
+  </div>
+
+  <div class="grp">
+    <div class="grpname">PERFORMANCE</div>
+    <div class="controls">
+      <label for="quality">Quality</label><input id="quality" type="range" min="0" max="1" step=".001" value="0.5"><output></output>
+      <label for="taa">TAA</label><input id="taa" type="range" min="0" max="1" step=".001" value="1.0"><output></output>
+    </div>
+  </div>
+
+  <div class="perf">
+    <div class="chip"><i>FPS</i> <b id="fps">—</b></div>
+    <div class="chip"><i>RT</i> <b id="rt">—</b></div>
+    <div class="chip"><i>STEPS</i> <b id="steps">—</b></div>
+  </div>
+  <p class="status" id="status"><b>Booting…</b></p>
+</section>
+
+<div class="hint">drag&nbsp;=&nbsp;orbit · wheel&nbsp;=&nbsp;dolly · pointer&nbsp;ripples&nbsp;the&nbsp;rough</div>
+<pre class="err" id="err"></pre>
+
+<script>
+"use strict";
+(function () {
+
+/* ───────────────────────────────────────────────────────────────────────────
+   VanguardGolfSDF_v2 — AAA-stylized realtime SDF golf course.
+   Additive successor to vanguard-golf-sdf-v1 (v1 left untouched).
+
+   Lineage / visual contract:
+     · VanguardNoise  — Hash21 / Hash22 / ValueNoise / FBM (ported verbatim).
+     · VanguardUber   — gradient, fresnel, emissive and pointer-ripple blocks
+                        keep the Uber naming and blend order.
+   Geometry is a labelled SDF level instrument, not a port of the Uber surface
+   shader itself.
+
+   Render graph (all offscreen buffers RGBA16F when EXT_color_buffer_float is
+   present, RGBA8 otherwise):
+     1  scene    -> rtScene    (renderScale x display, sub-pixel jittered)
+     2  taa      -> rtHist[a]  (exponential/converging accumulation of 1)
+     3  bright   -> rtBloom[0] (quarter res, soft-knee threshold)
+     4  blurH    -> rtBloom[1]
+     5  blurV    -> rtBloom[0]
+     6  composite-> backbuffer (tent downsample + CoC DoF + bloom + ACES
+                                + vignette + grain + ordered dither)
+   ─────────────────────────────────────────────────────────────────────────── */
+
+const canvas = document.getElementById("gl");
+const errBox = document.getElementById("err");
+
+function fatal(msg) {
+  errBox.style.display = "block";
+  errBox.textContent = String(msg);
+  console.error(msg);
+}
+
+const gl = canvas.getContext("webgl2", {
+  antialias: false, alpha: false, depth: false, stencil: false,
+  premultipliedAlpha: false, preserveDrawingBuffer: true,
+  powerPreference: "high-performance",
+});
+if (!gl) { fatal("WebGL2 is required for VanguardGolfSDF_v2."); return; }
+
+const HAS_FLOAT_RT = !!gl.getExtension("EXT_color_buffer_float");
+gl.getExtension("OES_texture_float_linear");
+const HDR_FORMAT = HAS_FLOAT_RT ? gl.RGBA16F : gl.RGBA8;
+const HDR_TYPE   = HAS_FLOAT_RT ? gl.HALF_FLOAT : gl.UNSIGNED_BYTE;
+
+/* ═══════════════════════════════════════════════════════════ shared vertex ══ */
+
+const VS = `#version 300 es
+precision highp float;
+const vec2 P[3] = vec2[3](vec2(-1.0,-1.0), vec2(3.0,-1.0), vec2(-1.0,3.0));
+out vec2 vUv;
+void main(){
+  vec2 p = P[gl_VertexID];
+  vUv = p * 0.5 + 0.5;
+  gl_Position = vec4(p, 0.0, 1.0);
+}`;
+
+/* ══════════════════════════════════════════════════════════════ scene pass ══ */
+
+const FS_SCENE = `#version 300 es
+precision highp float;
+precision highp int;
+in  vec2 vUv;
+layout(location = 0) out vec4 fragColor;   // rgb = HDR radiance, a = view depth
+
+uniform vec2  uResolution;
+uniform vec2  uJitter;
+uniform float uTime;
+
+// ── v1 contract uniforms (semantics preserved) ──
+uniform float uMorph;    // hill amplitude / terrain drama
+uniform float uFlow;     // wind + animation rate
+uniform float uHeat;     // neon emissive intensity
+uniform float uGlass;    // glass sheet strength
+
+// ── v2 additions ──
+uniform float uSunAz;
+uniform float uSunEl;
+uniform float uFogAmt;
+uniform float uSkyAmt;
+uniform float uGrassH;
+uniform float uGrassD;
+uniform float uSss;
+uniform float uQuality;
+uniform vec2  uPointer;  // NDC [-1,1]
+uniform vec3  uOrbit;    // yaw, pitch, dolly
+
+/* ─────────────────────────────── VanguardNoise (GLSL port, verbatim math) ── */
+
+float Vanguard_Hash21(vec2 p){
+  vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.x + p3.y) * p3.z);
+}
+vec2 Vanguard_Hash22(vec2 p){
+  vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
+  p3 += dot(p3, p3.yzx + 33.33);
+  return fract((p3.xx + p3.yz) * p3.zy);
+}
+float Vanguard_ValueNoise(vec2 uv){
+  vec2 i = floor(uv), f = fract(uv);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  float a = Vanguard_Hash21(i);
+  float b = Vanguard_Hash21(i + vec2(1.0, 0.0));
+  float c = Vanguard_Hash21(i + vec2(0.0, 1.0));
+  float d = Vanguard_Hash21(i + vec2(1.0, 1.0));
+  return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+/* ── portable smoothstep: GLSL/HLSL leave edge0 >= edge1 undefined, and this
+      course uses descending edges everywhere for "inside a radius" masks. ── */
+float sstep(float a, float b, float x){
+  float t = clamp((x - a) / (b - a), 0.0, 1.0);
+  return t * t * (3.0 - 2.0 * t);
+}
+
+/* Octave decorrelation written component-wise so the GLSL and HLSL ports are
+   bit-identical (a mat2 literal transposes between the two dialects). */
+vec2 golfRot(vec2 p){ return vec2(0.80 * p.x - 0.60 * p.y, 0.60 * p.x + 0.80 * p.y); }
+
+float golfFBM3(vec2 p){
+  float f = 0.0, a = 0.5;
+  for (int i = 0; i < 3; i++){ f += a * Vanguard_ValueNoise(p); p = golfRot(p) * 2.03; a *= 0.5; }
+  return f * 1.146;
+}
+float golfFBM4(vec2 p){
+  float f = 0.0, a = 0.5;
+  for (int i = 0; i < 4; i++){ f += a * Vanguard_ValueNoise(p); p = golfRot(p) * 2.03; a *= 0.5; }
+  return f * 1.069;
+}
+
+/* ─────────────────────────────────────────────── course layout constants ── */
+
+const vec2  GREEN_C = vec2( 7.6, 10.8);
+const float GREEN_R = 4.9;
+const vec2  CUP_C   = vec2( 8.3, 11.7);
+const vec2  POND_C  = vec2(-9.2,  1.6);
+const float POND_R  = 5.3;
+const vec2  TEE_C   = vec2(-4.0,-19.0);
+const float SEA_Y   = -3.2;
+const float FAR_T   = 132.0;
+
+// material ids
+const float MAT_TERRAIN = 0.0;
+const float MAT_GRASS   = 1.0;
+const float MAT_GLASS   = 2.0;
+const float MAT_POLE    = 3.0;
+const float MAT_FLAG    = 4.0;
+const float MAT_TEE     = 5.0;
+const float MAT_BALL    = 6.0;
+const float MAT_WATER   = 7.0;
+
+// frame globals (set once in main, read by the field functions)
+vec3  gRo;
+vec3  gSun;
+vec2  gPointerXZ;
+float gPointerAmt;
+float gCupY;
+float gTeeY;
+float gPondY;
+
+/* ─────────────────────────────────────────────────── course mask fields ── */
+
+// Single-valued corridor centreline: lets fairway distance be one abs() rather
+// than a curve search.
+float fairwayX(float z){
+  float s = z + 20.0;
+  return -4.0 + s * 0.40 + sin(s * 0.20) * 2.6;
+}
+
+float islandMask(vec2 xz){
+  float r = length(vec2(xz.x * 0.92, (xz.y + 3.0) * 0.74));
+  r += (golfFBM3(xz * 0.055 + 7.0) - 0.5) * 5.0;
+  return sstep(21.5, 17.0, r);
+}
+float fairwayMask(vec2 xz){
+  float dx  = abs(xz.x - fairwayX(xz.y));
+  float band = sstep(5.6, 3.1, dx);
+  float ends = sstep(-23.0, -19.5, xz.y) * sstep(13.2, 9.2, xz.y);
+  return band * ends;
+}
+float greenMask(vec2 xz){
+  return sstep(GREEN_R, GREEN_R - 2.3, length((xz - GREEN_C) * vec2(1.0, 0.88)));
+}
+float teeMask(vec2 xz){ return sstep(2.7, 1.3, length((xz - TEE_C) * vec2(1.0, 1.5))); }
+
+float bunkerMask(vec2 xz){
+  float b = sstep(3.0, 1.5, length((xz - vec2( 2.2,  9.0)) * vec2(1.00, 1.35)));
+  b = max(b, sstep(2.5, 1.2, length((xz - vec2(12.9,  7.6)) * vec2(1.25, 1.00))));
+  b = max(b, sstep(2.7, 1.3, length((xz - vec2( 6.6, -4.4)) * vec2(1.00, 1.20))));
+  return b;
+}
+float pondMask(vec2 xz){ return sstep(POND_R, POND_R - 2.7, length((xz - POND_C) * vec2(1.0, 0.90))); }
+float pondShelf(vec2 xz){ return sstep(POND_R + 3.2, POND_R + 0.4, length((xz - POND_C) * vec2(1.0, 0.90))); }
+float cartMask(vec2 xz){
+  float dx = abs(xz.x - (fairwayX(xz.y) - 7.2));
+  return sstep(0.62, 0.30, dx) * sstep(-23.0, -20.0, xz.y) * sstep(14.0, 11.0, xz.y);
+}
+
+/* ───────────────────────────────────────────────────────── height field ── */
+
+float courseH(vec2 xz){
+  // Continuous distance LOD: high-frequency octaves fade out with range so the
+  // far half of the island costs less without producing an LOD seam.
+  float camD = length(xz - gRo.xz);
+  float lod  = 1.0 - sstep(18.0, 48.0, camD);
+
+  float amp = mix(0.9, 3.4, uMorph);
+  float h   = golfFBM4(xz * 0.052) * amp;
+  h += (golfFBM3(xz * 0.175 + 31.0) - 0.5) * amp * 0.30 * lod;
+
+  float fw = fairwayMask(xz);
+  h = mix(h, h * 0.55 + 0.14, fw * 0.85);            // mown, gently rolling
+
+  float ps = pondShelf(xz);
+  h = mix(h, h * 0.25 + 0.62, ps * 0.9);             // level the shoreline
+  float pm = pondMask(xz);
+  h = mix(h, h * 0.10 - 1.35, pm);                   // basin
+
+  float gm = greenMask(xz);
+  float dish = sstep(GREEN_R, 0.0, length(xz - GREEN_C)) * 0.13;
+  h = mix(h, h * 0.16 + 0.74 - dish, gm);            // flat green with a dish
+
+  float tm = teeMask(xz);
+  h = mix(h, h * 0.12 + 0.58, tm);                   // tee pad
+
+  float bk = bunkerMask(xz);
+  h = mix(h, h * 0.35 + 0.20, bk * 0.95);            // flatten sand
+  h -= bk * 0.52;                                    // then sink it
+
+  h -= sstep(0.22, 0.10, length(xz - CUP_C)) * 0.20; // the cup
+
+  // island falls away into the sea -> a real silhouette and a real horizon
+  float isl = islandMask(xz);
+  return mix(-9.5, h, isl);
+}
+
+/* ──────────────────────────────────────────────────── grass shell field ── */
+
+float roughAmt(vec2 xz){
+  float r = (1.0 - fairwayMask(xz)) * (1.0 - greenMask(xz)) * (1.0 - bunkerMask(xz))
+          * (1.0 - pondMask(xz))    * (1.0 - teeMask(xz))   * (1.0 - cartMask(xz));
+  return r * sstep(0.55, 0.95, islandMask(xz));
+}
+
+// Gusting wind: a slow advected noise field, not a global sine.
+vec2 windVec(vec2 xz){
+  float g = Vanguard_ValueNoise(xz * 0.055 + vec2(uTime * 0.33, uTime * 0.11));
+  float b = sin(uTime * 1.7 + xz.x * 0.22 + xz.y * 0.17) * 0.5 + 0.5;
+  float s = (0.22 + 1.25 * g * g) * (0.6 + 0.4 * b) * uFlow;
+  return vec2(0.906, 0.423) * s;
+}
+
+// One hash per lookup — the v1 5x5 Voronoi was 25x this cost per shell.
+float tuftField(vec2 x){
+  vec2 i = floor(x), f = fract(x) - 0.5;
+  vec2 o = (Vanguard_Hash22(i) - 0.5) * 0.74;
+  float d = length(f - o);
+  return 1.0 - sstep(0.12, 0.47, d);
+}
+
+// VanguardUber pointer-ripple contract, promoted from a screen effect to an
+// actual geometric disturbance of the rough.
+float rippleAt(vec2 xz){
+  if (gPointerAmt < 0.01) return 0.0;
+  float d = length(xz - gPointerXZ);
+  return exp(-d * 0.42) * sin(d * 3.1 - uTime * 4.6) * 0.19 * gPointerAmt;
+}
+
+/* ──────────────────────────────────────────────────────────── scene map ── */
+
+vec2 mapScene(vec3 p){
+  float h = courseH(p.xz);
+  vec2 res = vec2((p.y - h) * 0.55, MAT_TERRAIN);   // height-field Lipschitz guard
+
+  float camD = length(p - gRo);
+
+  // — layered grass shells, LOD by range —
+  float rough = roughAmt(p.xz);
+  float gh = uGrassH * mix(0.09, 1.0, rough);
+  if (gh > 0.012 && camD < 62.0){
+    int shells = camD < 13.0 ? 3 : (camD < 27.0 ? 2 : 1);
+    vec2 wind = windVec(p.xz);
+    float rip = rippleAt(p.xz) * rough;
+    for (int k = 0; k < 3; k++){
+      if (k >= shells) break;
+      float f   = float(k + 1) / float(shells);
+      float top = h + gh * f + rip * f;
+      vec2  sway = wind * (f * f) * 0.62;
+      float tuft = tuftField(p.xz * uGrassD + sway + vec2(0.0, float(k) * 13.73));
+      float d = abs(p.y - top) - (0.008 + 0.032 * tuft * (1.0 - 0.42 * f));
+      d += (1.0 - tuft) * 0.30;                     // carve gaps between tufts
+      if (d < res.x) res = vec2(d, MAT_GRASS);
+    }
+  }
+
+  // — glass sheet over the fairway (Uber glass contract) —
+  float gAmt = fairwayMask(p.xz) * (0.22 + uGlass * 0.78);
+  if (gAmt > 0.04){
+    float sheetY = h + 0.060 + sin(p.x * 0.62 + p.z * 0.47 + uTime * 0.55 * uFlow) * 0.013;
+    float d = (abs(p.y - sheetY) - 0.012) * 0.7 + (1.0 - gAmt) * 0.55;
+    if (d < res.x) res = vec2(d, MAT_GLASS);
+  }
+
+  // — pond water sheet —
+  float pm = pondMask(p.xz);
+  if (pm > 0.03){
+    float d = (p.y - gPondY) * 0.6 + (1.0 - pm) * 0.85;
+    if (d < res.x) res = vec2(d, MAT_WATER);
+  }
+
+  // — flagstick, flag, ball —
+  vec3 fp = p - vec3(CUP_C.x, gCupY, CUP_C.y);
+  {
+    vec3 q = fp; q.y -= clamp(q.y, 0.0, 2.15);
+    float pole = length(q) - 0.030;
+    if (pole < res.x) res = vec2(pole, MAT_POLE);
+  }
+  {
+    vec3 q = fp - vec3(0.0, 1.94, 0.0);
+    float along = clamp(q.x / 0.74, 0.0, 1.0);
+    q.z -= sin(q.x * 4.4 - uTime * (2.0 + 4.5 * uFlow)) * 0.105 * along;
+    q.y -= sin(q.x * 2.6 - uTime * (1.7 + 3.0 * uFlow)) * 0.045 * along;
+    vec3 b = abs(q - vec3(0.37, 0.0, 0.0)) - vec3(0.37, 0.215, 0.009);
+    float flag = length(max(b, 0.0)) + min(max(b.x, max(b.y, b.z)), 0.0);
+    if (flag < res.x) res = vec2(flag, MAT_FLAG);
+  }
+  {
+    float ball = length(p - vec3(CUP_C.x - 1.05, gCupY + 0.11, CUP_C.y + 0.55)) - 0.105;
+    if (ball < res.x) res = vec2(ball, MAT_BALL);
+  }
+
+  // — tee markers —
+  {
+    vec3 q = p - vec3(TEE_C.x, gTeeY, TEE_C.y);
+    q.x = abs(q.x) - 1.25;
+    q.y -= clamp(q.y, 0.0, 0.26);
+    float tee = length(q) - 0.10;
+    if (tee < res.x) res = vec2(tee, MAT_TEE);
+  }
+
+  return res;
+}
+
+// Cheap occluder set for shadows + AO: terrain plus the flagstick only.
+float mapOccluder(vec3 p){
+  float d = (p.y - courseH(p.xz)) * 0.6;
+  vec3 q = p - vec3(CUP_C.x, gCupY, CUP_C.y);
+  q.y -= clamp(q.y, 0.0, 2.15);
+  return min(d, length(q) - 0.032);
+}
+
+float softShadow(vec3 ro, vec3 rd){
+  float res = 1.0, t = 0.05;
+  for (int i = 0; i < 26; i++){
+    float h = mapOccluder(ro + rd * t);
+    res = min(res, 9.0 * h / t);
+    t += clamp(h * 1.4, 0.055, 1.35);
+    if (res < 0.004 || t > 30.0) break;
+  }
+  return clamp(res, 0.0, 1.0);
+}
+
+float calcAO(vec3 p, vec3 n){
+  float occ = 0.0, sca = 1.0;
+  for (int i = 0; i < 5; i++){
+    float hh = 0.022 + 0.19 * float(i) / 4.0;
+    occ += (hh - mapOccluder(p + n * hh)) * sca;
+    sca *= 0.80;
+  }
+  return clamp(1.0 - 2.4 * occ, 0.0, 1.0);
+}
+
+// Height fields get a 3-tap gradient normal instead of a 6-tap SDF normal —
+// smooth by construction, which is what the curved hills want.
+vec3 terrainNormal(vec2 xz){
+  float e = 0.035;
+  float h0 = courseH(xz);
+  return normalize(vec3(h0 - courseH(xz + vec2(e, 0.0)), e, h0 - courseH(xz + vec2(0.0, e))));
+}
+
+// Tetrahedral SDF normal for the shells and props (keeps hard props hard).
+vec3 sdfNormal(vec3 p, float eps){
+  vec2 k = vec2(1.0, -1.0);
+  return normalize(k.xyy * mapScene(p + k.xyy * eps).x +
+                   k.yyx * mapScene(p + k.yyx * eps).x +
+                   k.yxy * mapScene(p + k.yxy * eps).x +
+                   k.xxx * mapScene(p + k.xxx * eps).x);
+}
+
+/* ───────────────────────────────────────────────────────── sky & water ── */
+
+vec3 skyColor(vec3 rd){
+  float h = rd.y;
+  vec3 zen = vec3(0.006, 0.024, 0.062);
+  vec3 mid = vec3(0.016, 0.062, 0.098);
+  vec3 hor = vec3(0.072, 0.150, 0.140);
+  vec3 c = mix(hor, mid, sstep(0.0, 0.24, h));
+  c = mix(c, zen, sstep(0.14, 0.78, h));
+
+  float sd = max(dot(rd, gSun), 0.0);
+  c += vec3(0.34, 0.80, 0.42) * pow(sd, 5.0)   * 0.16;   // broad neon halo
+  c += vec3(0.72, 1.00, 0.74) * pow(sd, 240.0) * 1.9;    // tight halo
+  c += vec3(3.4, 4.4, 2.9) * sstep(0.99955, 0.99985, sd); // disc
+
+  c += vec3(0.10, 0.40, 0.22) * exp(-abs(h) * 12.0) * (0.45 + uHeat * 0.85);
+
+  // stylised banded cloud deck
+  if (h > -0.02){
+    vec2 cu = rd.xz / max(h + 0.14, 0.14);
+    float cl = golfFBM4(cu * 0.42 + vec2(uTime * 0.010, uTime * 0.004));
+    cl = sstep(0.50, 0.86, cl) * sstep(0.0, 0.26, h);
+    float lit = pow(max(dot(normalize(rd + gSun * 0.3), gSun), 0.0), 3.0);
+    c = mix(c, c * 0.85 + vec3(0.045, 0.115, 0.125) + vec3(0.18, 0.30, 0.16) * lit, cl * 0.85);
+  }
+
+  // sparse stars, high only
+  float st = Vanguard_Hash21(floor(rd.xz * 420.0 / max(h, 0.08)));
+  c += vec3(0.7, 0.9, 1.0) * sstep(0.9975, 0.9995, st) * sstep(0.25, 0.7, h) * 0.9;
+
+  return c * uSkyAmt;
+}
+
+float waveH(vec2 w, float scale){
+  float t = uTime * (0.25 + uFlow * 0.55);
+  float a = Vanguard_ValueNoise(w * scale        + vec2(t * 0.9,  t * 0.35));
+  float b = Vanguard_ValueNoise(w * scale * 2.17 - vec2(t * 0.55, t * 1.1));
+  return a * 0.65 + b * 0.35;
+}
+
+vec3 shadeWater(vec3 p, vec3 rd, float bodyDepth, float scale, float amp, vec3 deep){
+  float e = 0.09;
+  float h0 = waveH(p.xz, scale);
+  vec3 n = normalize(vec3((h0 - waveH(p.xz + vec2(e, 0.0), scale)) * amp,
+                          e,
+                          (h0 - waveH(p.xz + vec2(0.0, e), scale)) * amp));
+  vec3 rf = reflect(rd, n);
+  rf.y = abs(rf.y) * 0.85 + 0.012;
+  vec3 skyc = skyColor(rf);
+
+  float fres = 0.025 + 0.975 * pow(1.0 - clamp(dot(n, -rd), 0.0, 1.0), 5.0);
+  vec3 col = mix(deep * (0.35 + 0.65 * clamp(bodyDepth, 0.0, 1.0)), skyc, fres);
+
+  vec3 hv = normalize(gSun - rd);
+  col += vec3(1.0, 0.98, 0.80) * pow(clamp(dot(n, hv), 0.0, 1.0), 620.0) * 5.5;
+  col += vec3(0.10, 0.55, 0.28) * pow(clamp(dot(n, hv), 0.0, 1.0), 26.0) * 0.22 * uHeat;
+  return col;
+}
+
+/* ──────────────────────────────────────────────────────── ground shading ── */
+
+// Evaluable at any xz, which is what lets the glass sheet refract the turf
+// underneath without a second raymarch.
+vec3 shadeGround(vec3 p, vec3 n, vec3 rd, float sh, float ao, float grassFrac, bool isGrass){
+  vec2 xz = p.xz;
+  float fw = fairwayMask(xz);
+  float gm = greenMask(xz);
+  float bk = bunkerMask(xz);
+  float ct = cartMask(xz);
+  float tm = teeMask(xz);
+
+  vec3 cRough = vec3(0.026, 0.170, 0.062);
+  vec3 cFair  = vec3(0.052, 0.400, 0.128);
+  vec3 cGreen = vec3(0.078, 0.560, 0.205);
+  vec3 cSand  = vec3(0.880, 0.760, 0.470);
+  vec3 cPath  = vec3(0.300, 0.330, 0.310);
+
+  vec3 alb = cRough;
+  alb = mix(alb, cFair,  fw);
+  alb = mix(alb, cGreen, max(gm, tm * 0.7));
+  alb = mix(alb, cPath,  ct);
+  alb = mix(alb, cSand,  bk);
+
+  // mown stripes — the strongest single "this is a golf course" read
+  float mowA = 0.5 + 0.5 * sin(dot(xz, vec2(0.866, 0.500)) * 1.05);
+  float mowB = 0.5 + 0.5 * sin(dot(xz - GREEN_C, vec2(-0.500, 0.866)) * 2.4);
+  alb *= 1.0 + (mowA - 0.5) * 0.30 * fw + (mowB - 0.5) * 0.22 * gm;
+
+  // broad colour variance so the turf is never one flat green
+  float var = golfFBM3(xz * 0.14);
+  alb *= mix(0.80, 1.22, var);
+  alb = mix(alb, alb * vec3(0.72, 1.06, 0.86), (1.0 - fw) * (1.0 - gm) * 0.45);
+
+  // sand sparkle
+  alb += vec3(0.9, 0.8, 0.55) * bk * sstep(0.72, 0.96, Vanguard_Hash21(floor(xz * 90.0))) * 0.35;
+
+  // cup ring
+  float ring = sstep(0.40, 0.26, length(xz - CUP_C)) * sstep(0.16, 0.24, length(xz - CUP_C));
+  alb = mix(alb, vec3(0.85, 0.95, 0.88), ring * 0.85);
+
+  /* ── VanguardUber gradient contract (kept, but as a subtle tint rather than
+        the v1 global multiply that flattened every value) ── */
+  float gAng = 55.0 * 0.017453292;
+  float gt = clamp(dot(xz * 0.030, vec2(cos(gAng), sin(gAng))) + 0.5, 0.0, 1.0);
+  vec3 gA = vec3(0.62, 0.86, 0.70);
+  vec3 gB = vec3(1.18, 1.24, 0.92);
+  alb *= mix(gA, gB, gt);
+
+  // ── grass shell: root darkening + per-shell taper ──
+  if (isGrass){
+    alb *= mix(0.20, 1.14, pow(grassFrac, 0.75));
+    alb = mix(alb, alb * vec3(1.25, 1.05, 0.55), pow(grassFrac, 4.0) * 0.55); // dry tips
+  }
+
+  /* ── lighting: warm key / cool sky fill / neon bounce / neon rim ── */
+  vec3 keyCol  = vec3(1.00, 0.955, 0.720) * 3.4;
+  vec3 fillCol = vec3(0.26, 0.50, 1.000) * 0.62;
+  vec3 bncCol  = vec3(0.10, 0.42, 0.180) * 0.55;
+  vec3 rimCol  = vec3(0.36, 1.00, 0.560);
+
+  float ndl = clamp(dot(n, gSun), 0.0, 1.0);
+  float wrap = clamp((dot(n, gSun) + 0.32) / 1.32, 0.0, 1.0);  // soft terminator
+  vec3 lit = alb * keyCol * mix(ndl, wrap, 0.45) * sh;
+
+  float skyOcc = clamp(0.5 + 0.5 * n.y, 0.0, 1.0);
+  lit += alb * fillCol * skyOcc * ao;
+  lit += alb * bncCol * clamp(0.5 - 0.5 * n.y, 0.0, 1.0) * ao;
+
+  float rim = pow(clamp(1.0 + dot(n, rd), 0.0, 1.0), 3.2) * clamp(0.25 - dot(n, gSun) * 0.6, 0.0, 1.0);
+  lit += rimCol * rim * (0.55 + uHeat * 0.45);
+
+  // specular identity per surface: glassy fairway/green, matte rough, dull sand
+  float glossy = max(fw * 0.9, gm) * (0.35 + uGlass * 0.65);
+  float specExp = mix(14.0, 150.0, glossy);
+  float specAmt = mix(0.045, 0.85, glossy) * (bk > 0.5 ? 0.25 : 1.0);
+  vec3 hv = normalize(gSun - rd);
+  lit += keyCol * pow(clamp(dot(n, hv), 0.0, 1.0), specExp) * specAmt * sh * 0.30;
+
+  if (isGrass){
+    // fake translucency — light bleeding through the blade tips
+    float back = pow(clamp(dot(-rd, -gSun) * 0.5 + 0.5, 0.0, 1.0), 3.0);
+    lit += vec3(0.30, 1.00, 0.30) * back * pow(grassFrac, 2.2) * 0.95 * sh * uSss;
+    // blade-tip specular
+    lit += keyCol * pow(grassFrac, 7.0) * ndl * sh * 0.16;
+  }
+
+  /* ── VanguardUber emissive contract ── */
+  float pulse = 0.5 + 0.5 * sin(uTime * 1.6 + xz.x * 0.22 + xz.y * 0.13);
+  float emitMask = isGrass ? (0.10 + 0.75 * pow(grassFrac, 2.6)) : (0.10 + 0.45 * max(fw, gm));
+  lit += vec3(0.11, 0.86, 0.30) * uHeat * emitMask * (0.55 + 0.45 * pulse) * (0.35 + 0.65 * ao);
+
+  return lit;
+}
+
+/* ────────────────────────────────────────────────────────────── fog/haze ── */
+
+vec3 applyFog(vec3 col, float t, vec3 rd, float py){
+  float hFall = exp(-max(py - SEA_Y, 0.0) * 0.115);
+  float f = 1.0 - exp(-t * uFogAmt * mix(1.0, hFall, 0.75));
+  float sd = max(dot(rd, gSun), 0.0);
+  vec3 fogCol = vec3(0.034, 0.082, 0.098);
+  fogCol = mix(fogCol, vec3(0.16, 0.34, 0.20), pow(sd, 4.0) * 0.85);
+  fogCol += vec3(0.030, 0.150, 0.070) * uHeat * 0.55;
+  return mix(col, fogCol * uSkyAmt, clamp(f, 0.0, 1.0));
+}
+
+/* ──────────────────────────────────────────────────────────────── main ── */
+
+void main(){
+  vec2 frag = vUv * uResolution + uJitter;
+  vec2 uv = (frag - 0.5 * uResolution) / uResolution.y;
+
+  gSun = normalize(vec3(cos(uSunEl) * sin(uSunAz), max(sin(uSunEl), 0.02), cos(uSunEl) * cos(uSunAz)));
+
+  // hero orbit: pulled back and up so the island silhouettes against the sky
+  float yaw   = uOrbit.x;
+  float pitch = clamp(uOrbit.y, 0.045, 1.05);
+  float rad   = clamp(uOrbit.z, 16.0, 74.0);
+  gRo = vec3(sin(yaw) * cos(pitch) * rad, 2.6 + sin(pitch) * rad * 0.92, cos(yaw) * cos(pitch) * rad);
+  vec3 ta = vec3(1.8, 1.1, -0.6);
+  vec3 ww = normalize(ta - gRo);
+  vec3 uu = normalize(cross(ww, vec3(0.0, 1.0, 0.0)));
+  vec3 vv = cross(uu, ww);
+  vec3 rd = normalize(uu * uv.x + vv * uv.y + ww * 1.85);
+
+  // pointer -> world XZ (Uber ripple contract, now geometric)
+  gPointerAmt = clamp(length(uPointer) * 1.6, 0.0, 1.0);
+  {
+    vec3 prd = normalize(uu * (uPointer.x * uResolution.x / uResolution.y * 0.5)
+                       + vv * (uPointer.y * 0.5) + ww * 1.85);
+    float k = (0.9 - gRo.y) / min(prd.y, -0.02);
+    gPointerXZ = gRo.xz + prd.xz * clamp(k, 0.0, 90.0);
+  }
+
+  gCupY  = courseH(CUP_C);
+  gTeeY  = courseH(TEE_C);
+  gPondY = courseH(POND_C + vec2(POND_R + 1.5, 0.0)) - 0.30;
+
+  // analytic sea plane bounds the march and guarantees a horizon line
+  float tSea = FAR_T;
+  bool  seaHit = false;
+  if (rd.y < -1e-4){
+    float ts = (SEA_Y - gRo.y) / rd.y;
+    if (ts > 0.0 && ts < FAR_T){ tSea = ts; seaHit = true; }
+  }
+
+  int   maxSteps = int(mix(74.0, 168.0, uQuality));
+  float tMax = min(tSea, FAR_T);
+  float t = 0.35;
+  float mat = -1.0;
+  bool  hit = false;
+  for (int i = 0; i < 180; i++){
+    if (i >= maxSteps) break;
+    vec3 pos = gRo + rd * t;
+    vec2 r = mapScene(pos);
+    // epsilon relaxes with range: fewer wasted steps and it pre-softens edges
+    float eps = 0.0016 * (1.0 + t * 0.085);
+    if (r.x < eps){ hit = true; mat = r.y; break; }
+    t += r.x * 0.72;
+    if (t > tMax) break;
+  }
+
+  vec3 col;
+  float depth = FAR_T;
+
+  if (hit){
+    depth = t;
+    vec3 p = gRo + rd * t;
+
+    if (mat == MAT_WATER){
+      float bed = gPondY - courseH(p.xz);
+      col = shadeWater(p, rd, bed * 0.7, 0.55, 0.42, vec3(0.012, 0.075, 0.080));
+      col += vec3(0.06, 0.42, 0.22) * uHeat * 0.35 * sstep(POND_R - 2.6, POND_R, length(p.xz - POND_C));
+    }
+    else if (mat == MAT_POLE || mat == MAT_FLAG || mat == MAT_TEE || mat == MAT_BALL){
+      vec3 n = sdfNormal(p, 0.0025);
+      float sh = softShadow(p + n * 0.02, gSun);
+      float ndl = clamp(dot(n, gSun), 0.0, 1.0);
+      vec3 alb, emis = vec3(0.0);
+      if (mat == MAT_FLAG){
+        alb  = vec3(0.95, 0.20, 0.24);
+        emis = vec3(0.85, 0.10, 0.14) * 0.55;
+        float back = pow(clamp(dot(-rd, -gSun) * 0.5 + 0.5, 0.0, 1.0), 2.0);
+        emis += vec3(1.0, 0.35, 0.30) * back * 0.75;           // cloth translucency
+      } else if (mat == MAT_POLE){
+        alb  = vec3(0.90, 0.94, 0.92);
+        emis = vec3(0.25, 0.90, 0.45) * uHeat * 0.55;
+      } else if (mat == MAT_BALL){
+        alb  = vec3(0.97, 0.99, 0.96);
+        emis = vec3(0.20, 0.85, 0.40) * uHeat * 0.30;
+      } else {
+        alb  = vec3(0.95, 0.72, 0.18);
+        emis = vec3(0.60, 0.40, 0.05) * uHeat * 0.5;
+      }
+      col  = alb * vec3(1.00, 0.955, 0.720) * 3.4 * ndl * sh;
+      col += alb * vec3(0.26, 0.50, 1.00) * 0.62 * clamp(0.5 + 0.5 * n.y, 0.0, 1.0);
+      col += vec3(1.0, 0.97, 0.8) * pow(clamp(dot(n, normalize(gSun - rd)), 0.0, 1.0), 90.0) * 0.9 * sh;
+      col += vec3(0.36, 1.00, 0.56) * pow(clamp(1.0 + dot(n, rd), 0.0, 1.0), 3.0) * 0.8;
+      col += emis;
+    }
+    else if (mat == MAT_GLASS){
+      // real fresnel + refraction of the turf beneath + sharp spec + tint
+      float e = 0.05;
+      float w0 = Vanguard_ValueNoise(p.xz * 1.7 + uTime * 0.25 * uFlow);
+      vec3 n = normalize(vec3(
+        (w0 - Vanguard_ValueNoise((p.xz + vec2(e, 0.0)) * 1.7 + uTime * 0.25 * uFlow)) * 0.55,
+        e,
+        (w0 - Vanguard_ValueNoise((p.xz + vec2(0.0, e)) * 1.7 + uTime * 0.25 * uFlow)) * 0.55));
+      n = normalize(mix(terrainNormal(p.xz), n, 0.45));
+
+      vec3 rr = refract(rd, n, 1.0 / 1.34);
+      vec2 offXZ = p.xz + rr.xz * (0.16 + 0.34 * uGlass);
+      vec3 nb = terrainNormal(offXZ);
+      vec3 pb = vec3(offXZ.x, courseH(offXZ), offXZ.y);
+      float shB = softShadow(pb + nb * 0.02, gSun);
+      float aoB = calcAO(pb, nb);
+      vec3 beneath = shadeGround(pb, nb, rd, shB, aoB, 0.30, false);
+
+      float fres = 0.03 + 0.97 * pow(1.0 - clamp(dot(n, -rd), 0.0, 1.0), 5.0);
+      vec3 tint = mix(vec3(1.0), vec3(0.58, 1.02, 0.80), 0.55 * uGlass);
+      col = mix(beneath * tint, skyColor(reflect(rd, n)), fres * (0.20 + 0.80 * uGlass));
+      col += vec3(1.0, 0.98, 0.85) * pow(clamp(dot(n, normalize(gSun - rd)), 0.0, 1.0), 420.0)
+             * 3.2 * uGlass * softShadow(p + n * 0.03, gSun);
+      col += vec3(0.30, 1.00, 0.60) * fres * uGlass * uHeat * 0.22;
+    }
+    else {
+      bool isGrass = (mat == MAT_GRASS);
+      vec3 n = isGrass ? normalize(mix(sdfNormal(p, 0.004), terrainNormal(p.xz), 0.45))
+                       : terrainNormal(p.xz);
+      float sh = softShadow(p + n * 0.025, gSun);
+      float ao = calcAO(p, n);
+      float gf = 0.0;
+      if (isGrass){
+        float gh = max(uGrassH * mix(0.09, 1.0, roughAmt(p.xz)), 1e-3);
+        gf = clamp((p.y - courseH(p.xz)) / gh, 0.0, 1.0);
+        ao *= mix(0.42, 1.0, gf);                    // self-shadowing canopy
+      }
+      col = shadeGround(p, n, rd, sh, ao, gf, isGrass);
+    }
+
+    col = applyFog(col, t, rd, (gRo + rd * t).y);
+  }
+  else if (seaHit){
+    depth = tSea;
+    vec3 p = gRo + rd * tSea;
+    col = shadeWater(p, rd, 1.0, 0.22, 0.30, vec3(0.004, 0.026, 0.042));
+    // neon rim where the island meets the water
+    col += vec3(0.05, 0.30, 0.16) * uHeat * exp(-length(p.xz) * 0.045) * 0.55;
+    col = applyFog(col, tSea, rd, SEA_Y);
+  }
+  else {
+    depth = FAR_T;
+    col = skyColor(rd);
+  }
+
+  fragColor = vec4(max(col, 0.0), depth);
+}`;
+
+/* ═════════════════════════════════════════════════════════════ TAA pass ══ */
+
+const FS_TAA = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform sampler2D uScene;
+uniform sampler2D uHistory;
+uniform float uBlend;   // 1.0 = full reset
+void main(){
+  vec4 s = texture(uScene, vUv);
+  vec4 h = texture(uHistory, vUv);
+  fragColor = mix(h, s, clamp(uBlend, 0.0, 1.0));
+}`;
+
+/* ═══════════════════════════════════════════════════════════ bloom pass ══ */
+
+const FS_BRIGHT = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform sampler2D uTex;
+uniform vec2 uTexel;
+uniform float uThresh;
+vec3 tap(vec2 o){ return texture(uTex, vUv + o * uTexel).rgb; }
+void main(){
+  vec3 c = (tap(vec2(-1.0,-1.0)) + tap(vec2(1.0,-1.0)) +
+            tap(vec2(-1.0, 1.0)) + tap(vec2(1.0, 1.0))) * 0.25;
+  float l = dot(c, vec3(0.2126, 0.7152, 0.0722));
+  float knee = uThresh * 0.6;
+  float soft = clamp(l - uThresh + knee, 0.0, 2.0 * knee);
+  soft = soft * soft / (4.0 * knee + 1e-4);
+  float w = max(soft, l - uThresh) / max(l, 1e-4);
+  fragColor = vec4(c * w, 1.0);
+}`;
+
+const FS_BLUR = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+uniform sampler2D uTex;
+uniform vec2 uDir;   // texel-scaled direction
+void main(){
+  // 9-tap gaussian, linear-sampling weights
+  vec3 c = texture(uTex, vUv).rgb * 0.227027;
+  const float off[4] = float[4](1.3846153846, 3.2307692308, 5.1153846154, 7.0);
+  const float wgt[4] = float[4](0.3162162162, 0.0702702703, 0.0155000000, 0.0032000000);
+  for (int i = 0; i < 4; i++){
+    c += texture(uTex, vUv + uDir * off[i]).rgb * wgt[i];
+    c += texture(uTex, vUv - uDir * off[i]).rgb * wgt[i];
+  }
+  fragColor = vec4(c, 1.0);
+}`;
+
+/* ═══════════════════════════════════════════════════════ composite pass ══ */
+
+const FS_COMPOSITE = `#version 300 es
+precision highp float;
+in vec2 vUv;
+out vec4 fragColor;
+
+uniform sampler2D uScene;
+uniform sampler2D uBloom;
+uniform vec2  uResolution;   // display resolution
+uniform vec2  uSceneTexel;   // 1 / scene RT size
+uniform float uTime;
+uniform float uBloomAmt;
+uniform float uExposure;
+uniform float uDof;
+uniform float uGrain;
+uniform float uVignette;
+
+// ACES fitted (Narkowicz 2015) — a real filmic curve instead of a bare pow().
+vec3 acesFilm(vec3 x){
+  const float a = 2.51, b = 0.03, c = 2.43, d = 0.59, e = 0.14;
+  return clamp((x * (a * x + b)) / (x * (c * x + d) + e), 0.0, 1.0);
+}
+
+const vec2 POISSON[8] = vec2[8](
+  vec2( 0.9020, 0.1650), vec2( 0.3210, 0.8420), vec2(-0.6180, 0.6100),
+  vec2(-0.9310,-0.2140), vec2(-0.2600,-0.8800), vec2( 0.5400,-0.7100),
+  vec2( 0.1100, 0.3400), vec2(-0.3600, 0.0900));
+
+void main(){
+  // tent downsample from the supersampled scene RT (this is the AA resolve)
+  vec2 px = uSceneTexel * 0.5;
+  vec4 c0 = texture(uScene, vUv + vec2(-px.x, -px.y));
+  vec4 c1 = texture(uScene, vUv + vec2( px.x, -px.y));
+  vec4 c2 = texture(uScene, vUv + vec2(-px.x,  px.y));
+  vec4 c3 = texture(uScene, vUv + vec2( px.x,  px.y));
+  vec4 base = (c0 + c1 + c2 + c3) * 0.25;
+
+  vec3 col = base.rgb;
+
+  // circle-of-confusion depth-of-field, focused on the mid-course
+  if (uDof > 0.001){
+    float depth = base.a;
+    float focus = 34.0;
+    float coc = clamp(abs(depth - focus) / 70.0, 0.0, 1.0);
+    coc = pow(coc, 1.4) * uDof * 4.2;
+    if (coc > 0.35){
+      vec3 acc = col; float wsum = 1.0;
+      for (int i = 0; i < 8; i++){
+        vec2 o = POISSON[i] * coc * uSceneTexel;
+        vec4 s = texture(uScene, vUv + o);
+        float w = 1.0 - 0.55 * clamp(abs(s.a - depth) / 90.0, 0.0, 1.0);
+        acc += s.rgb * w; wsum += w;
+      }
+      col = acc / wsum;
+    }
+  }
+
+  col += texture(uBloom, vUv).rgb * uBloomAmt;
+
+  col *= uExposure;
+  col = acesFilm(col);
+
+  // subtle neon lift in the shadows, cool-warm split preserved
+  col = pow(col, vec3(0.98, 0.955, 1.015));
+
+  vec2 q = (vUv - 0.5) * vec2(uResolution.x / uResolution.y, 1.0);
+  float v = 1.0 - uVignette * dot(q, q) * 0.62;
+  col *= clamp(v, 0.0, 1.0);
+
+  // film grain + ordered dither kill the banding in the sky gradient
+  float n = fract(sin(dot(gl_FragCoord.xy + uTime * 60.0, vec2(12.9898, 78.233))) * 43758.5453);
+  col += (n - 0.5) * 0.020 * uGrain;
+  vec2 bp = floor(mod(gl_FragCoord.xy, 4.0));
+  float dith = fract(dot(bp, vec2(0.0625, 0.25)) + 0.5) - 0.5;
+  col += dith * (1.0 / 255.0);
+
+  fragColor = vec4(clamp(col, 0.0, 1.0), 1.0);
+}`;
+
+/* ═══════════════════════════════════════════════════════════════ plumbing ══ */
+
+function compile(type, src, tag) {
+  const s = gl.createShader(type);
+  gl.shaderSource(s, src);
+  gl.compileShader(s);
+  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+    const log = gl.getShaderInfoLog(s) || "";
+    const lines = src.split("\n");
+    const m = /ERROR:\s*\d+:(\d+)/.exec(log);
+    const ctx = m ? "\n>> " + (lines[Number(m[1]) - 1] || "").trim() : "";
+    throw new Error(tag + " compile failed:\n" + log + ctx);
+  }
+  return s;
+}
+
+function program(fsSrc, tag) {
+  const p = gl.createProgram();
+  gl.attachShader(p, compile(gl.VERTEX_SHADER, VS, tag + ":vs"));
+  gl.attachShader(p, compile(gl.FRAGMENT_SHADER, fsSrc, tag + ":fs"));
+  gl.linkProgram(p);
+  if (!gl.getProgramParameter(p, gl.LINK_STATUS))
+    throw new Error(tag + " link failed:\n" + (gl.getProgramInfoLog(p) || ""));
+  const u = new Proxy({}, {
+    get(cache, name) {
+      if (!(name in cache)) cache[name] = gl.getUniformLocation(p, name);
+      return cache[name];
+    },
+  });
+  return { p, u };
+}
+
+let PROG;
+try {
+  PROG = {
+    scene: program(FS_SCENE, "scene"),
+    taa: program(FS_TAA, "taa"),
+    bright: program(FS_BRIGHT, "bright"),
+    blur: program(FS_BLUR, "blur"),
+    comp: program(FS_COMPOSITE, "composite"),
+  };
+} catch (e) { fatal(e.message); return; }
+
+const vao = gl.createVertexArray();
+gl.bindVertexArray(vao);
+
+function makeRT(w, h, fmt, type) {
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texImage2D(gl.TEXTURE_2D, 0, fmt, w, h, 0, gl.RGBA, type, null);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+  const fbo = gl.createFramebuffer();
+  gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  return { tex, fbo, w, h };
+}
+function disposeRT(rt) { if (rt) { gl.deleteTexture(rt.tex); gl.deleteFramebuffer(rt.fbo); } }
+
+let rtScene = null, rtHist = [null, null], rtBloom = [null, null];
+let histIndex = 0;
+let sceneW = 0, sceneH = 0, dispW = 0, dispH = 0;
+
+/* ═════════════════════════════════════════════════════════════════ state ══ */
+
+const CONTROLS = [
+  "morph", "flow", "heat", "glass",
+  "sunAz", "sunEl", "fog", "sky",
+  "grassH", "grassD", "sss",
+  "bloom", "expo", "dof", "grain", "vig",
+  "quality", "taa",
+];
+
+const state = {};
+const els = {};
+CONTROLS.forEach((k) => {
+  const el = document.getElementById(k);
+  els[k] = el;
+  state[k] = Number(el.value);
+  const out = el.nextElementSibling;
+  const sync = () => { out.value = state[k].toFixed(el.step.includes(".0002") ? 4 : 3); };
+  el.addEventListener("input", () => { state[k] = Number(el.value); sync(); markDirty(); });
+  sync();
+});
+
+const orbit = { yaw: 0.62, pitch: 0.30, dolly: 40.0 };
+const pointer = { x: 0, y: 0 };
+let dragging = false, lastX = 0, lastY = 0;
+let pointerMoves = 0, frames = 0, accum = 0, dirty = true;
+
+function markDirty() { dirty = true; }
+
+canvas.addEventListener("pointerdown", (e) => {
+  dragging = true; lastX = e.clientX; lastY = e.clientY;
+  try { canvas.setPointerCapture(e.pointerId); } catch (_) {}
+  markDirty();
+});
+addEventListener("pointerup", () => { dragging = false; });
+canvas.addEventListener("pointermove", (e) => {
+  pointerMoves++;
+  pointer.x = (e.clientX / innerWidth) * 2 - 1;
+  pointer.y = -((e.clientY / innerHeight) * 2 - 1);
+  if (dragging) {
+    orbit.yaw += (e.clientX - lastX) * 0.0055;
+    orbit.pitch = Math.min(1.05, Math.max(0.045, orbit.pitch + (e.clientY - lastY) * 0.0035));
+    lastX = e.clientX; lastY = e.clientY;
+  }
+  markDirty();
+}, { passive: true });
+canvas.addEventListener("wheel", (e) => {
+  e.preventDefault();
+  orbit.dolly = Math.min(74, Math.max(16, orbit.dolly * (1 + Math.sign(e.deltaY) * 0.075)));
+  markDirty();
+}, { passive: false });
+
+/* Halton(2,3) sub-pixel jitter for the temporal supersample. */
+function halton(i, b) {
+  let f = 1, r = 0;
+  while (i > 0) { f /= b; r += f * (i % b); i = Math.floor(i / b); }
+  return r;
+}
+const JITTER = [];
+for (let i = 1; i <= 16; i++) JITTER.push([halton(i, 2) - 0.5, halton(i, 3) - 0.5]);
+
+function resize() {
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  const w = Math.max(2, Math.floor(innerWidth * dpr));
+  const h = Math.max(2, Math.floor(innerHeight * dpr));
+  const rs = 0.75 + state.quality * 1.05;               // 0.75 .. 1.80
+  const sw = Math.max(2, Math.round(w * rs));
+  const sh = Math.max(2, Math.round(h * rs));
+  if (w === dispW && h === dispH && sw === sceneW && sh === sceneH) return;
+
+  dispW = w; dispH = h; sceneW = sw; sceneH = sh;
+  canvas.width = w; canvas.height = h;
+
+  disposeRT(rtScene); disposeRT(rtHist[0]); disposeRT(rtHist[1]);
+  disposeRT(rtBloom[0]); disposeRT(rtBloom[1]);
+  rtScene = makeRT(sw, sh, HDR_FORMAT, HDR_TYPE);
+  rtHist[0] = makeRT(sw, sh, HDR_FORMAT, HDR_TYPE);
+  rtHist[1] = makeRT(sw, sh, HDR_FORMAT, HDR_TYPE);
+  const bw = Math.max(2, sw >> 2), bh = Math.max(2, sh >> 2);
+  rtBloom[0] = makeRT(bw, bh, HDR_FORMAT, HDR_TYPE);
+  rtBloom[1] = makeRT(bw, bh, HDR_FORMAT, HDR_TYPE);
+  markDirty();
+
+  document.getElementById("rt").textContent = sw + "\u00d7" + sh;
+}
+addEventListener("resize", resize);
+
+function bindTex(unit, tex, prog, name) {
+  gl.activeTexture(gl.TEXTURE0 + unit);
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.uniform1i(prog.u[name], unit);
+}
+function drawTo(rt) {
+  gl.bindFramebuffer(gl.FRAMEBUFFER, rt ? rt.fbo : null);
+  gl.viewport(0, 0, rt ? rt.w : dispW, rt ? rt.h : dispH);
+  gl.drawArrays(gl.TRIANGLES, 0, 3);
+}
+
+/* ══════════════════════════════════════════════════════════════ mainloop ══ */
+
+const t0 = performance.now();
+let lastSig = "";
+let fpsAcc = 0, fpsCount = 0, fpsLast = t0, fpsValue = 0;
+let currentSteps = 0;
+
+function frame(now) {
+  resize();
+
+  const time = (now - t0) * 0.001;
+  const sig = [
+    orbit.yaw.toFixed(4), orbit.pitch.toFixed(4), orbit.dolly.toFixed(3),
+    pointer.x.toFixed(3), pointer.y.toFixed(3),
+    ...CONTROLS.map((k) => state[k].toFixed(4)),
+  ].join("|");
+  if (sig !== lastSig) { lastSig = sig; dirty = true; }
+
+  // The scene animates, so history can only be reused for the sub-pixel
+  // supersample; it is re-seeded continuously rather than held indefinitely.
+  if (dirty) { accum = 0; dirty = false; } else { accum++; }
+
+  const jitterOn = state.taa > 0.01;
+  const j = jitterOn ? JITTER[frames % JITTER.length] : [0, 0];
+
+  // ── 1. scene ──
+  const S = PROG.scene;
+  gl.useProgram(S.p);
+  gl.uniform2f(S.u.uResolution, sceneW, sceneH);
+  gl.uniform2f(S.u.uJitter, j[0], j[1]);
+  gl.uniform1f(S.u.uTime, time);
+  gl.uniform1f(S.u.uMorph, state.morph);
+  gl.uniform1f(S.u.uFlow, state.flow);
+  gl.uniform1f(S.u.uHeat, state.heat);
+  gl.uniform1f(S.u.uGlass, state.glass);
+  gl.uniform1f(S.u.uSunAz, state.sunAz);
+  gl.uniform1f(S.u.uSunEl, state.sunEl);
+  gl.uniform1f(S.u.uFogAmt, state.fog);
+  gl.uniform1f(S.u.uSkyAmt, state.sky);
+  gl.uniform1f(S.u.uGrassH, state.grassH);
+  gl.uniform1f(S.u.uGrassD, state.grassD);
+  gl.uniform1f(S.u.uSss, state.sss);
+  gl.uniform1f(S.u.uQuality, state.quality);
+  gl.uniform2f(S.u.uPointer, pointer.x, pointer.y);
+  gl.uniform3f(S.u.uOrbit, orbit.yaw, orbit.pitch, orbit.dolly);
+  currentSteps = Math.round(74 + state.quality * 94);
+  drawTo(rtScene);
+
+  // ── 2. temporal resolve ──
+  const prev = rtHist[histIndex];
+  const cur = rtHist[1 - histIndex];
+  const T = PROG.taa;
+  gl.useProgram(T.p);
+  bindTex(0, rtScene.tex, T, "uScene");
+  bindTex(1, prev.tex, T, "uHistory");
+  // caps convergence at 6 frames so animation never smears
+  const blend = jitterOn ? Math.max(1 / 6, 1 / (accum + 1)) : 1.0;
+  gl.uniform1f(T.u.uBlend, blend);
+  drawTo(cur);
+  histIndex = 1 - histIndex;
+  const resolved = cur;
+
+  // ── 3-5. bloom ──
+  const B = PROG.bright;
+  gl.useProgram(B.p);
+  bindTex(0, resolved.tex, B, "uTex");
+  gl.uniform2f(B.u.uTexel, 1 / sceneW, 1 / sceneH);
+  gl.uniform1f(B.u.uThresh, 0.95);
+  drawTo(rtBloom[0]);
+
+  const BL = PROG.blur;
+  gl.useProgram(BL.p);
+  bindTex(0, rtBloom[0].tex, BL, "uTex");
+  gl.uniform2f(BL.u.uDir, 1 / rtBloom[0].w, 0);
+  drawTo(rtBloom[1]);
+  bindTex(0, rtBloom[1].tex, BL, "uTex");
+  gl.uniform2f(BL.u.uDir, 0, 1 / rtBloom[0].h);
+  drawTo(rtBloom[0]);
+
+  // ── 6. composite ──
+  const C = PROG.comp;
+  gl.useProgram(C.p);
+  bindTex(0, resolved.tex, C, "uScene");
+  bindTex(1, rtBloom[0].tex, C, "uBloom");
+  gl.uniform2f(C.u.uResolution, dispW, dispH);
+  gl.uniform2f(C.u.uSceneTexel, 1 / sceneW, 1 / sceneH);
+  gl.uniform1f(C.u.uTime, time);
+  gl.uniform1f(C.u.uBloomAmt, state.bloom);
+  gl.uniform1f(C.u.uExposure, state.expo);
+  gl.uniform1f(C.u.uDof, state.dof);
+  gl.uniform1f(C.u.uGrain, state.grain);
+  gl.uniform1f(C.u.uVignette, state.vig);
+  drawTo(null);
+
+  frames++;
+  fpsCount++;
+  if (now - fpsLast >= 500) {
+    fpsValue = (fpsCount * 1000) / (now - fpsLast);
+    fpsAcc = fpsValue;
+    fpsCount = 0; fpsLast = now;
+    document.getElementById("fps").textContent = fpsValue.toFixed(1);
+    document.getElementById("steps").textContent = String(currentSteps);
+  }
+  requestAnimationFrame(frame);
+}
+resize();
+requestAnimationFrame(frame);
+
+document.getElementById("status").innerHTML =
+  "<b>VanguardGolfSDF_v2 live</b><br>" +
+  "hero framing \u00b7 sky + sea horizon \u00b7 soft shadows + AO \u00b7 layered SSS grass<br>" +
+  "glass fairway (fresnel + refraction) \u00b7 bunkers \u00b7 pond \u00b7 pin &amp; flag<br>" +
+  "ACES + bloom + DoF + SSAA/TAA \u00b7 " + (HAS_FLOAT_RT ? "RGBA16F HDR" : "RGBA8 fallback");
+
+/* ═══════════════════════════════════════════════════════════════════ API ══ */
+
+const api = {
+  version: "v2",
+  controls: CONTROLS.slice(),
+  setControl(name, value) {
+    if (!(name in state)) return false;
+    const el = els[name];
+    const v = Math.min(Number(el.max), Math.max(Number(el.min), Number(value)));
+    state[name] = v;
+    el.value = String(v);
+    el.nextElementSibling.value = v.toFixed(3);
+    markDirty();
+    return true;
+  },
+  setOrbit(yaw, pitch, dolly) {
+    if (yaw !== undefined) orbit.yaw = Number(yaw);
+    if (pitch !== undefined) orbit.pitch = Math.min(1.05, Math.max(0.045, Number(pitch)));
+    if (dolly !== undefined) orbit.dolly = Math.min(74, Math.max(16, Number(dolly)));
+    markDirty();
+  },
+  setPointer(x, y) { pointer.x = Number(x); pointer.y = Number(y); pointerMoves++; markDirty(); },
+  getState() {
+    return {
+      version: "v2", frames, pointerMoves, fps: Number(fpsAcc.toFixed(2)),
+      renderTarget: [sceneW, sceneH], display: [dispW, dispH],
+      steps: currentSteps, hdr: HAS_FLOAT_RT,
+      time: (performance.now() - t0) * 0.001,
+      orbit: { ...orbit }, pointer: { ...pointer },
+      ...state,
+    };
+  },
+};
+window.RelayVanguardGolf = api;
+window.RelayVanguardGolfV2 = api;
+
+addEventListener("error", (e) => fatal("JS error: " + e.message));
+
+})();
+</script>
+</body>
+</html>

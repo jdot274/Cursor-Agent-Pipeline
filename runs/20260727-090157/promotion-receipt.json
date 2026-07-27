@@ -1,0 +1,22 @@
+{
+  "schemaVersion": 1,
+  "asset": {
+    "name": "Relay Exact Runtime v1",
+    "type": "spline-shadertoy-unity-runtime",
+    "sourcePolicy": "original-executable-source"
+  },
+  "gates": {
+    "sourceProvenance": "PASS",
+    "ossaSchema": "PASS",
+    "runtimeContract": "PASS",
+    "unityWebGLBuild": "PASS",
+    "unityEditorOpen": "PASS",
+    "unityScriptCompilation": "PASS",
+    "browserVisualInteraction": "PENDING_ENTERPRISE_POLICY"
+  },
+  "promotedAt": "2026-07-27T09:01:57.6903235-04:00",
+  "registryVersion": "relay-exact-runtime-v1",
+  "studioUrl": "http://127.0.0.1:3210/exact-runtime-v1/",
+  "promotedUrl": "http://127.0.0.1:3210/unity-exact-v1/",
+  "status": "runtime-built-visual-qc-pending"
+}

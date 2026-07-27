@@ -1,0 +1,60 @@
+{
+  "schemaVersion": 1,
+  "objective": "glassy layered SDF grass, green neon, hilly golf course (VanguardGolfSDF_v1)",
+  "units": "metres",
+  "sourceSpace": "right-handed-y-up (WebGL2 raymarch; +Y up, camera orbits about origin)",
+  "destinationSpaces": {
+    "unity": "native HLSL port renders in clip-space full-screen pass; SDF math kept in the same right-handed Y-up scene space",
+    "unreal": "labeled native variant via Custom node; same scene space inside the shader body"
+  },
+  "transformHierarchy": [
+    { "name": "VanguardGolfSDF_v1", "type": "FullscreenRaymarch", "children": [
+      { "name": "OrbitCameraRig", "type": "Camera", "eye": "(sin(yaw)*11, 4.8+pitch*3.5, cos(yaw)*11)", "target": [0, 0.6, 0], "focal": 1.55, "yawDefault": 0.55, "pitchDefault": 0.18, "pitchClamp": [-0.55, 0.85] },
+      { "name": "TerrainSDF", "type": "SDF", "detail": "FBM hills (xz*0.085, 5 oct) + ridges (xz*0.22+17, 3 oct), amp lerp(0.55,2.35,uMorph); 3 putting-green depressions at (6.5,-3), (-5,4.5), (1.5,7); cup cylinder r=0.07 at green 1" },
+      { "name": "GrassShells", "type": "SDF", "detail": "3 Voronoi blade shells at layer 0.0/0.45/0.85; density lerp(9,16,layer); wind sway driven by uTime*uFlow; suppressed on greens" },
+      { "name": "GlassFairway", "type": "SDF", "detail": "thin sheet abs(y-(h+0.03))-0.01 masked to fairway corridor, presence scaled by 0.35+uGlass*0.65" }
+    ]}
+  ],
+  "meshes": "none — all geometry is shader-procedural SDF raymarched in the fragment shader (96 steps, hit eps 0.0015, far 55)",
+  "materials": [
+    { "name": "turf/neon grass", "type": "shader-procedural", "detail": "albedo lerp(turf(0.04,0.28,0.08), neon(0.2,1.0,0.38)) by grass height and uHeat; VanguardUber 55-degree gradient contract (deep turf -> neon lime, strength 0.85, gain 2.2)" },
+    { "name": "putting green", "type": "shader-procedural", "detail": "greenPad (0.08,0.55,0.22) blended 0.85 inside green mask" },
+    { "name": "glass", "type": "shader-procedural", "detail": "VanguardUber fresnel contract: pow(1-NdV, lerp(1.4,3.2,uGlass)) * (0.35+uGlass*1.4) * glassCol(0.55,1.0,0.75); specular exponent lerp(16,64,uGlass)" },
+    { "name": "emissive", "type": "shader-procedural", "detail": "neon * uHeat * pulse(sin(uTime*2.2+x*0.4)) * grassAmt * 0.35 (Uber emissive contract)" }
+  ],
+  "textures": "none — fully procedural (Vanguard_Hash21/Hash22 value noise, FBM, 5x5 Voronoi F1/F2)",
+  "lights": "single analytic directional light normalize(0.45,0.85,0.35) inside the shader; distance fog to (0.02,0.07,0.04); neon fog scaled by uHeat; vignette 1-0.22*|uv|^2; output gamma pow(col,0.92)",
+  "cameras": "orbit rig only (see transformHierarchy); drag deltas yaw +0.005/px, pitch +0.004/px",
+  "animation": "requestAnimationFrame loop; uTime = (performance.now()-t0)*0.001 seconds; wind, blade scroll, ripple, and emissive pulse all derive from uTime",
+  "shaderUniforms": {
+    "uResolution": { "type": "vec2", "unit": "pixels", "source": "canvas size, devicePixelRatio capped at 2, set every frame" },
+    "uTime": { "type": "float", "unit": "seconds", "source": "RAF-driven, (now-t0)*0.001" },
+    "uMorph": { "type": "float", "min": 0, "max": 1, "step": 0.001, "default": 0.62, "hud": "Morph" },
+    "uFlow": { "type": "float", "min": 0, "max": 1, "step": 0.001, "default": 0.48, "hud": "Flow" },
+    "uHeat": { "type": "float", "min": 0, "max": 1, "step": 0.001, "default": 0.78, "hud": "Heat" },
+    "uGlass": { "type": "float", "min": 0, "max": 1, "step": 0.001, "default": 0.72, "hud": "Glass" },
+    "uPointer": { "type": "vec2", "range": "NDC [-1,1], y inverted from client coords", "default": [0, 0], "source": "pointermove" },
+    "uOrbit": { "type": "vec2", "content": "(yaw radians unbounded, pitch radians clamped -0.55..0.85 in shader)", "default": [0.55, 0.18], "source": "pointer drag" }
+  },
+  "jsApi": {
+    "object": "window.RelayVanguardGolf",
+    "setControl": "(name in {morph,flow,heat,glass}, value) -> updates state + HUD slider",
+    "getState": "() -> { frames, pointerMoves, morph, flow, heat, glass, orbit, pointer, time }"
+  },
+  "provenance": {
+    "runtimeMaster": { "path": "runtime/vanguard-golf-sdf-v1/index.html", "sha256": "93A02BB5721E71684A392810002BC4D0A3CC051660D358EDBBEF11F70A1CC61F", "bytes": 15011 },
+    "deployedCopy": { "path": "deploy/vanguard-golf-sdf-v1/index.html", "sha256": "93A02BB5721E71684A392810002BC4D0A3CC051660D358EDBBEF11F70A1CC61F", "bytes": 15011, "liveUrl": "https://vanguard-golf-sdf-v1.vercel.app", "liveBodySha256Verified": "93A02BB5721E71684A392810002BC4D0A3CC051660D358EDBBEF11F70A1CC61F (fetched 2026-07-27T14:35-04:00)" },
+    "lineage": {
+      "VanguardUber.shader": { "path": "C:/Users/joeyw/UnityProjects/VanguardShaderLab_2026-07-25/Assets/Vanguard/Shaders/VanguardUber.shader", "sha256": "C374F76CF213E43F71434FDC4A0A85BFF2BA5DB25E7B3C893D0ED5C15F50FBA8", "bytes": 7080 },
+      "VanguardNoise.hlsl": { "path": "C:/Users/joeyw/UnityProjects/VanguardShaderLab_2026-07-25/Assets/Vanguard/Shaders/VanguardNoise.hlsl", "sha256": "03DD14F76EE42982AD2418F84EC8B6A2B21A2ACE3D9AEE572DEA1AEE86B55535", "bytes": 5935 }
+    },
+    "unityNativeVariant": {
+      "VanguardGolfSDF_v1.shader": { "path": "C:/Users/joeyw/UnityProjects/VanguardShaderLab_GolfSDF_v1_2026-07-27/Assets/Vanguard/Shaders/VanguardGolfSDF_v1.shader", "sha256": "6240790C345B5C4BA9CEDD9D3A490D34D681D3F1CEB3A5CA06C3C02193EF53AC", "bytes": 2716 },
+      "VanguardGolfSDF_v1.hlsl": { "path": "C:/Users/joeyw/UnityProjects/VanguardShaderLab_GolfSDF_v1_2026-07-27/Assets/Vanguard/Shaders/VanguardGolfSDF_v1.hlsl", "sha256": "A7EF2F06665D43CBE36B1A5179A8B4819ED3BCE223D4F6536009CED54A581A69", "bytes": 6702 }
+    },
+    "unrealNativeVariant": {
+      "VanguardGolfSDF_v1.ush": { "path": "C:/UEProjects/OrbitShaderEngine_UE58/Shaders/VanguardGolfSDF_v1.ush", "virtualPath": "/RefractShaders/VanguardGolfSDF_v1.ush", "sha256": "658A7C29701B66DB8E487691736AF69471AC61D362677BD1DDCC8177EE85ECEC", "bytes": 7690 },
+      "GlslCompat.ush": { "path": "C:/UEProjects/OrbitShaderEngine_UE58/Shaders/GlslCompat.ush", "sha256": "EC9520C031736E67DEF3D3241E9813A9A7DBA33A648C00CC2E0C414D7F43D4FB", "bytes": 5705 }
+    }
+  }
+}

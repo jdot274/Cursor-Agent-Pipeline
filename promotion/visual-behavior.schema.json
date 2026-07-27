@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://refract.local/schemas/visual-behavior.v1.json",
+  "title": "Refract Visual Behavior",
+  "type": "object",
+  "required": [
+    "schemaVersion",
+    "id",
+    "name",
+    "type",
+    "source",
+    "shader",
+    "controls",
+    "interactions",
+    "destinations"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "refract.visual-behavior/1" },
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]+$" },
+    "name": { "type": "string", "minLength": 1 },
+    "type": { "enum": ["screen", "points", "lines", "mesh"] },
+    "source": {
+      "type": "object",
+      "required": ["fragmentPath"],
+      "properties": {
+        "fragmentPath": { "type": "string", "minLength": 1 },
+        "figmaFileKey": { "type": ["string", "null"] },
+        "figmaNodeId": { "type": ["string", "null"] },
+        "splineScene": { "type": ["string", "null"] },
+        "studioPath": { "type": ["string", "null"] }
+      }
+    },
+    "shader": {
+      "type": "object",
+      "required": ["contract", "vertex"],
+      "properties": {
+        "contract": { "enum": ["main", "mainImage"] },
+        "vertex": { "type": "string", "minLength": 1 },
+        "colorSpace": { "type": "string" },
+        "alpha": { "type": "string" }
+      }
+    },
+    "controls": {
+      "type": "object",
+      "required": ["morph", "flow", "heat"],
+      "additionalProperties": {
+        "type": "object",
+        "required": ["uniform", "type", "default"],
+        "properties": {
+          "uniform": { "type": "string" },
+          "type": { "enum": ["float", "vec2", "vec3", "color", "bool", "int"] },
+          "default": {},
+          "min": { "type": "number" },
+          "max": { "type": "number" },
+          "step": { "type": "number" },
+          "keyframeable": { "type": "boolean" }
+        }
+      }
+    },
+    "interactions": {
+      "type": "object",
+      "required": ["grab", "stretch", "twist", "scale"]
+    },
+    "destinations": {
+      "type": "object",
+      "required": ["web", "spline", "unreal"]
+    }
+  }
+}

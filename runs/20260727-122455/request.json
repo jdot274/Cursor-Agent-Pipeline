@@ -1,0 +1,15 @@
+{
+  "objective": "glassy layered SDF grass neon hilly golf course via Vanguard Uber lineage",
+  "mode": "design-to-realtime-3d",
+  "createdAt": "2026-07-27T16:24:55.000Z",
+  "status": "running",
+  "source": {
+    "vanguardUber": "C:/Users/joeyw/UnityProjects/VanguardShaderLab_2026-07-25/Assets/Vanguard/Shaders/VanguardUber.shader",
+    "vanguardNoise": "C:/Users/joeyw/UnityProjects/VanguardShaderLab_2026-07-25/Assets/Vanguard/Shaders/VanguardNoise.hlsl"
+  },
+  "destinations": {
+    "exactRuntime": "runtime/vanguard-golf-sdf-v1",
+    "unity": "UnityProjects/VanguardShaderLab_2026-07-25",
+    "unreal": "C:/UEProjects/OrbitShaderEngine_UE58"
+  }
+}

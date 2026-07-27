@@ -1,0 +1,53 @@
+{
+  "schemaVersion": "refract.visual-asset/1",
+  "id": "refract.organic-glow-instrument",
+  "name": "Organic Glow Instrument",
+  "version": "1.0.0",
+  "type": "screen",
+  "fragmentSource": "C:\\Users\\joeyw\\Desktop\\Refract_Motion_Studio_v3\\organic_glow_blob.frag.glsl",
+  "vertexSource": "varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position,1.0); }",
+  "defaults": {
+    "m": 0.55,
+    "f": 0.6,
+    "h": 0.65
+  },
+  "controls": {
+    "semantic": [
+      { "name": "morph", "uniform": "uMorph", "spline": "morph", "type": "float", "default": 0.55, "min": 0, "max": 1 },
+      { "name": "flow", "uniform": "uFlow", "spline": "flow", "type": "float", "default": 0.6, "min": 0, "max": 1 },
+      { "name": "heat", "uniform": "uHeat", "spline": "heat", "type": "float", "default": 0.65, "min": 0, "max": 1 }
+    ],
+    "interaction": [
+      { "name": "pointer", "uniform": "uPointer", "type": "vec2", "default": [0, 0], "min": [-1, -1], "max": [1, 1] },
+      { "name": "grab", "uniform": "uGrab", "spline": "grab", "type": "float", "default": 0, "min": 0, "max": 1 },
+      { "name": "stretch", "uniform": "uStretch", "type": "vec2", "default": [0, 0], "min": [-1.3, -1.3], "max": [1.3, 1.3] },
+      { "name": "twist", "uniform": "uTwist", "spline": "twist", "type": "float", "default": 0, "min": -3.2, "max": 3.2 },
+      { "name": "scale", "uniform": "uScale", "spline": "scale", "type": "float", "default": 1, "min": 0.35, "max": 3 }
+    ]
+  },
+  "timeline": {
+    "durationSeconds": 10,
+    "deterministic": true,
+    "recordable": ["morph", "flow", "heat", "pointer", "grab", "stretch", "twist", "scale"]
+  },
+  "targets": {
+    "webgl": { "status": "implemented", "surface": "Refract Motion Studio v3" },
+    "spline": {
+      "status": "runtime-wired",
+      "scene": "https://prod.spline.design/9iDxAeZvFP613YL5/scene.splinecode",
+      "requiredVariables": ["morph", "flow", "heat"],
+      "optionalVariables": ["grab", "stretchX", "stretchY", "twist", "scale"]
+    },
+    "unreal": {
+      "status": "translation-required",
+      "defaultProject": "C:\\UEProjects\\Lyra_5.7\\Lyra.uproject",
+      "method": "Unreal Material or Custom HLSL plus live material compile"
+    }
+  },
+  "provenance": {
+    "baselineRegistry": "C:\\Users\\joeyw\\Desktop\\Refract\\deploy_v39_master\\legacy_engines.v9.js",
+    "lab": "C:\\Users\\joeyw\\Desktop\\Refract_Motion_Studio_v3\\lab_site\\index.html",
+    "parentAsset": "Organic Glow Blob",
+    "policy": "append-only"
+  }
+}

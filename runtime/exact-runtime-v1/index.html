@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Relay Exact Runtime v1</title>
+  <style>
+    :root{color-scheme:dark;--ink:#f4f1ea;--muted:#938f88;--line:#2a2926;--panel:rgba(13,13,12,.82);--accent:#ff7a1a}
+    *{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#050505;color:var(--ink);font-family:Inter,ui-sans-serif,system-ui,sans-serif}
+    #surface,#splineCanvas,#shadertoyFrame{position:fixed;inset:0;width:100%;height:100%;border:0}
+    #splineCanvas{display:block;touch-action:none}#shadertoyFrame{display:none;background:#000}
+    .hud{position:fixed;z-index:20;top:16px;left:16px;width:min(430px,calc(100vw - 32px));padding:14px;border:1px solid var(--line);border-radius:18px;background:var(--panel);backdrop-filter:blur(24px);box-shadow:0 18px 60px #0008}
+    .top{display:flex;align-items:center;justify-content:space-between;gap:12px}.brand{font-weight:760;letter-spacing:-.02em}.badge{font:700 9px/1 ui-monospace,monospace;letter-spacing:.13em;color:#9ff0b6;border:1px solid #285536;border-radius:999px;padding:7px 9px}
+    .modes,.presets{display:flex;gap:7px;margin-top:12px}.modes button{flex:1}.presets{flex-wrap:wrap}
+    button,input{border:1px solid var(--line);background:#171715;color:var(--ink);border-radius:10px;padding:9px 11px;font:600 11px/1.2 inherit}button{cursor:pointer}button:hover,button.active{border-color:#6e4a2e;background:#261912}.modes button.active{color:#ffae73}
+    .source{display:grid;grid-template-columns:1fr auto;gap:7px;margin-top:8px}.source input{width:100%;font:500 10px/1.2 ui-monospace,monospace;color:#d7d2c9}
+    .controls{display:grid;grid-template-columns:70px 1fr 42px;gap:8px;align-items:center;margin-top:9px;font-size:10px;color:var(--muted)}input[type=range]{width:100%;height:4px;padding:0;accent-color:var(--accent)}
+    .status{margin:11px 0 0;color:var(--muted);font:500 10px/1.45 ui-monospace,monospace}.status b{color:#cfc9bf}
+    .hint{position:fixed;z-index:10;right:18px;bottom:18px;color:#aaa39a;background:#0e0e0dcc;border:1px solid #242321;border-radius:999px;padding:9px 12px;font:600 10px/1 ui-monospace,monospace;pointer-events:none}
+    @media(max-width:600px){.hud{top:8px;left:8px;width:calc(100vw - 16px);padding:11px}.hint{display:none}}
+  </style>
+</head>
+<body>
+  <div id="surface">
+    <canvas id="splineCanvas"></canvas>
+    <iframe id="shadertoyFrame" title="Exact Shadertoy runtime" allow="autoplay; fullscreen; gamepad"></iframe>
+  </div>
+
+  <section class="hud" aria-label="Exact shader runtime controls">
+    <div class="top">
+      <div class="brand">Relay · Exact Runtime</div>
+      <div class="badge">SOURCE PRESERVED</div>
+    </div>
+    <div class="modes">
+      <button id="splineMode" class="active" type="button">Spline exact</button>
+      <button id="shadertoyMode" type="button">Shadertoy exact</button>
+    </div>
+    <div id="splineSource" class="source">
+      <input id="splineUrl" value="https://prod.spline.design/9iDxAeZvFP613YL5/scene.splinecode" aria-label="Spline code URL">
+      <button id="loadSpline" type="button">Load</button>
+    </div>
+    <div id="shadertoySource" class="source" hidden>
+      <input id="shadertoyId" value="ll2GD3" aria-label="Shadertoy ID">
+      <button id="loadShadertoy" type="button">Load</button>
+    </div>
+    <div class="presets">
+      <button data-spline="https://prod.spline.design/9iDxAeZvFP613YL5/scene.splinecode" type="button">Interactive Orange Mesh</button>
+      <button data-toy="ll2GD3" type="button">Palettes</button>
+      <button data-toy="XsjXRm" type="button">Plasma Globe</button>
+    </div>
+    <div class="controls">
+      <label for="morph">Morph</label><input id="morph" type="range" min="0" max="1" step=".001" value=".62"><output>.620</output>
+      <label for="flow">Flow</label><input id="flow" type="range" min="0" max="1" step=".001" value=".58"><output>.580</output>
+      <label for="heat">Heat</label><input id="heat" type="range" min="0" max="1" step=".001" value=".78"><output>.780</output>
+    </div>
+    <p class="status" id="status"><b>Booting original Spline runtime…</b><br>No GLSL/HLSL translation. No reconstructed geometry.</p>
+  </section>
+  <div class="hint">Pointer, scroll, touch and source events stay live</div>
+
+  <script type="module">
+    import { Application } from "https://unpkg.com/@splinetool/runtime@1.12.98/build/runtime.js";
+
+    const canvas = document.querySelector("#splineCanvas");
+    const frame = document.querySelector("#shadertoyFrame");
+    const status = document.querySelector("#status");
+    const modeButtons = {
+      spline: document.querySelector("#splineMode"),
+      shadertoy: document.querySelector("#shadertoyMode"),
+    };
+    const controls = ["morph", "flow", "heat"];
+    let splineApp = null;
+    let activeMode = "spline";
+
+    const contract = () => Object.fromEntries(
+      controls.map((key) => [key, Number(document.querySelector(`#${key}`).value)])
+    );
+
+    function setStatus(title, detail) {
+      status.innerHTML = `<b>${title}</b><br>${detail}`;
+    }
+
+    function matchedVariables() {
+      if (!splineApp) return {};
+      let available = {};
+      try { available = splineApp.getVariables() || {}; } catch {}
+      const desired = contract();
+      const matched = {};
+      for (const [semantic, value] of Object.entries(desired)) {
+        const key = Object.keys(available).find((candidate) =>
+          candidate.toLowerCase() === semantic.toLowerCase()
+        );
+        if (key) matched[key] = value;
+      }
+      return matched;
+    }
+
+    function pushControls() {
+      for (const key of controls) {
+        const input = document.querySelector(`#${key}`);
+        input.nextElementSibling.value = Number(input.value).toFixed(3);
+      }
+      const payload = matchedVariables();
+      if (splineApp && Object.keys(payload).length) splineApp.setVariables(payload);
+      window.dispatchEvent(new CustomEvent("relay-controls", { detail: contract() }));
+      return payload;
+    }
+
+    async function loadSpline(url) {
+      if (!/^https:\/\/.+\.splinecode(?:[?#].*)?$/.test(url)) {
+        setStatus("Spline URL rejected", "Use the exact HTTPS Code export ending in .splinecode.");
+        return;
+      }
+      setMode("spline");
+      setStatus("Loading original Spline package…", url);
+      splineApp?.dispose?.();
+      splineApp = new Application(canvas, { renderMode: "continuous" });
+      await splineApp.load(url, contract());
+      const matched = Object.keys(pushControls());
+      setStatus(
+        "Spline exact runtime live",
+        matched.length
+          ? `Original scene + events · mapped variables: ${matched.join(", ")}`
+          : "Original scene, materials, camera, animation and events preserved · source has no matching morph/flow/heat variables."
+      );
+    }
+
+    function loadShadertoy(id) {
+      const clean = id.trim().replace(/[^A-Za-z0-9_-]/g, "");
+      if (!clean) return;
+      document.querySelector("#shadertoyId").value = clean;
+      frame.src = `https://www.shadertoy.com/embed/${clean}?gui=true&t=10&paused=false&muted=true`;
+      setMode("shadertoy");
+      setStatus("Shadertoy exact embed live", `Program ${clean} executes on Shadertoy's own runtime and pass graph.`);
+    }
+
+    function setMode(mode) {
+      activeMode = mode;
+      const spline = mode === "spline";
+      canvas.style.display = spline ? "block" : "none";
+      frame.style.display = spline ? "none" : "block";
+      document.querySelector("#splineSource").hidden = !spline;
+      document.querySelector("#shadertoySource").hidden = spline;
+      modeButtons.spline.classList.toggle("active", spline);
+      modeButtons.shadertoy.classList.toggle("active", !spline);
+    }
+
+    modeButtons.spline.addEventListener("click", () => setMode("spline"));
+    modeButtons.shadertoy.addEventListener("click", () => setMode("shadertoy"));
+    document.querySelector("#loadSpline").addEventListener("click", () =>
+      loadSpline(document.querySelector("#splineUrl").value.trim()).catch((error) =>
+        setStatus("Spline load failed", error?.message || String(error))
+      )
+    );
+    document.querySelector("#loadShadertoy").addEventListener("click", () =>
+      loadShadertoy(document.querySelector("#shadertoyId").value)
+    );
+    document.querySelectorAll("[data-spline]").forEach((button) =>
+      button.addEventListener("click", () => {
+        document.querySelector("#splineUrl").value = button.dataset.spline;
+        loadSpline(button.dataset.spline).catch((error) =>
+          setStatus("Spline load failed", error?.message || String(error))
+        );
+      })
+    );
+    document.querySelectorAll("[data-toy]").forEach((button) =>
+      button.addEventListener("click", () => loadShadertoy(button.dataset.toy))
+    );
+    controls.forEach((key) => document.querySelector(`#${key}`).addEventListener("input", pushControls));
+
+    window.RelayExactRuntime = {
+      loadSpline,
+      loadShadertoy,
+      setMode,
+      setControl(name, value) {
+        if (!controls.includes(name)) return;
+        document.querySelector(`#${name}`).value = String(value);
+        pushControls();
+      },
+      getState: () => ({ mode: activeMode, controls: contract() }),
+    };
+
+    loadSpline(document.querySelector("#splineUrl").value).catch((error) =>
+      setStatus("Spline load failed", error?.message || String(error))
+    );
+  </script>
+</body>
+</html>

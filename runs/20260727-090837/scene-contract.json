@@ -1,0 +1,37 @@
+{
+  "schemaVersion": 1,
+  "objective": "blue sphere shader",
+  "units": "metres",
+  "sourceSpace": "right-handed-y-up (three.js)",
+  "destinationSpace": "unity-y-up-left-handed (glTFast handles conversion)",
+  "transformHierarchy": [
+    { "name": "RelayBlueSphereShader_v1_bake", "type": "Scene", "children": [
+      { "name": "BlueSphere_BakedV1", "type": "Mesh", "position": [0, 0, 0] }
+    ]}
+  ],
+  "meshes": [
+    { "name": "BlueSphere_BakedV1", "base": "SphereGeometry r=1 128x96", "displacement": "relayDisp mirrored in JS at frozen T", "verts": 12513, "tris": 24320 }
+  ],
+  "materials": [
+    { "name": "baked standard", "type": "MeshStandardMaterial/PBR", "map": "baked 2048x1024 sRGB", "emissiveMap": "same texture", "emissiveIntensity": 0.925, "roughness": 0.35, "metalness": 0.05 }
+  ],
+  "textures": [
+    { "name": "relaySurface bake", "size": "2048x1024", "colorSpace": "sRGB", "content": "UV-space resolve of shared GLSL surface function" }
+  ],
+  "lights": "none in GLB; live runtime is self-shaded",
+  "cameras": "none exported; live camera fov 42 at z 3.2",
+  "animation": "none in GLB (frozen at T=343.061); live runtime animates via uTime",
+  "shaderUniforms": {
+    "uTime": { "type": "float", "unit": "seconds" },
+    "uMorph": { "type": "float", "min": 0, "max": 1, "default": 0.5, "frozenAtExport": 0.85 },
+    "uFlow": { "type": "float", "min": 0, "max": 1, "default": 0.5, "frozenAtExport": 0.65 },
+    "uHeat": { "type": "float", "min": 0, "max": 1, "default": 0.5, "frozenAtExport": 0.9 },
+    "uPointer": { "type": "vec3", "source": "pointer position, runtime only" }
+  },
+  "provenance": {
+    "three": "0.183.2",
+    "exporter": "three@0.183.2 GLTFExporter (user-pinned jsdelivr URL)",
+    "sourceHtmlSha256": "14696f89305655fac7acc74949612cf3d2b0f24dc136a2d83eeb14571ea5bfa7",
+    "glbSha256": "91c5bb98ee1bc60ddbb83cec9b4eadc2b96a8a83925e2243285a2e81d806936b"
+  }
+}

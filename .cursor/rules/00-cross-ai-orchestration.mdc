@@ -1,0 +1,18 @@
+---
+description: Route cross-AI build requests through Cursor subagents, Claude in Chrome, Lovable, and v0.
+globs:
+alwaysApply: true
+---
+
+For cross-AI requests, follow @AGENTS.md and use the `cross-ai-fanout` skill.
+
+Treat Cursor as the supervisor. Run independent preparation and verification agents in parallel. Keep the required Claude-in-Chrome middle layer; do not silently replace it with direct Lovable or v0 browser control.
+
+Prefer these healthy local MCP surfaces:
+
+1. `winremote` for the Chrome window and Claude extension side panel.
+2. `hybrid_automation_v2` if WinRemote cannot identify the control.
+3. `browser-use` for normal page interaction.
+4. `chrome-devtools-mcp` for page DOM, console, and network verification.
+
+Never expose secrets or inspect browser storage. Do not publish, deploy, spend money, change sharing, or overwrite an accepted project without a separate explicit instruction.

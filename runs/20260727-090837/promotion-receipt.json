@@ -1,0 +1,33 @@
+{
+  "run": "20260727-090837",
+  "objective": "blue sphere shader -> Unity via pinned three@0.183.2 GLTFExporter",
+  "createdAt": "2026-07-27T15:45:00-04:00",
+  "inputs": {
+    "three.module.js@0.183.2": "e8ac51bc2f6b7eb17bc88c6540eb0a1fee872f848949373de39d55f34b5c5a8f",
+    "GLTFExporter.js@0.183.2 (user-pinned URL)": "0dd325edc550303a2955012f7aa07988e6da8e7b86d4743454c87105cafe058b",
+    "runtime/blue-sphere-shader-v1/index.html": "14696f89305655fac7acc74949612cf3d2b0f24dc136a2d83eeb14571ea5bfa7",
+    "runtime/blue-sphere-shader-v1/serve.mjs": "0b42612b08736cbaf099ebbce1140d5e8701cfb502515240c613c361273bf11d"
+  },
+  "outputs": {
+    "BlueSphereShader_v1_bake.glb": {
+      "sha256": "91c5bb98ee1bc60ddbb83cec9b4eadc2b96a8a83925e2243285a2e81d806936b",
+      "bytes": 1778048,
+      "inPageSha256Match": true,
+      "frozenState": { "T": 343.06104600008535, "morph": 0.85, "flow": 0.65, "heat": 0.9 }
+    }
+  },
+  "gates": {
+    "sourceVisiblyRuns": { "result": "PASS", "evidence": "evidence/02-live-full-sphere.png; frames 380->526 in 1.2s" },
+    "pointerTouchInput": { "result": "PASS", "evidence": "real coordinate click on canvas registered pointerMoves=1, sphere rotation state advanced" },
+    "animationAdvances": { "result": "PASS", "evidence": "uTime 3.19->4.41 over 1.2s; 126s continuous session" },
+    "sharedVariablesRespond": { "result": "PASS", "evidence": "morph/flow/heat set to .85/.65/.90 via RelayBlueSphere API; evidence/03-live-high-morph-heat.png" },
+    "provenancePinned": { "result": "PASS", "evidence": "vendored + hashed three@0.183.2 modules; runtime imports the identical pinned jsdelivr URLs" },
+    "exportDeterminism": { "result": "PASS", "evidence": "in-page SHA-256 equals on-disk certutil SHA-256" },
+    "unityImport": { "result": "PASS", "evidence": "glTFast 6.19.0 GltfImporter: meshes=1 verts=12513 tris=24320 materials=1 textures=1 (relay-glb-import-v1.log line 694)" },
+    "unityVisualComparison": { "result": "PASS", "evidence": "evidence/04-unity-imported-glb.png matches live source silhouette and banding" }
+  },
+  "anomalies": [
+    "First batch import process exited 1 despite EditorApplication.Exit(0); log shows import PASS and mono thread-cleanup abort noise at shutdown. Second batch run (preview) exited 0.",
+    "Embedded verification browser blocks ES module loads from local http origins; runtime imports switched to the pinned https jsdelivr URLs (same bytes as vendored hashes)."
+  ]
+}

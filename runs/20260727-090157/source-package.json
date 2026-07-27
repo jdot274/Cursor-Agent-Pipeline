@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "runtime": {
+    "path": "runtime/exact-runtime-v1/index.html",
+    "sha256": "7A87799AEF9C1F80F0438666A681F857B5E5C9CAA27597505289AE72F1BDC9FA"
+  },
+  "spline": {
+    "name": "Interactive Orange Mesh",
+    "sceneUrl": "https://prod.spline.design/9iDxAeZvFP613YL5/scene.splinecode",
+    "runtimeVersion": "1.12.98",
+    "fidelityPolicy": "original-executable-source"
+  },
+  "shadertoy": [
+    {
+      "name": "Palettes",
+      "id": "ll2GD3",
+      "url": "https://www.shadertoy.com/view/ll2GD3"
+    },
+    {
+      "name": "Plasma Globe",
+      "id": "XsjXRm",
+      "url": "https://www.shadertoy.com/view/XsjXRm"
+    }
+  ],
+  "ossa": {
+    "manifest": "ossa/relay-exact-runtime.ossa.yaml",
+    "sha256": "A4266BAA739BDEC5D6382522367F2ADF92C7CEAF0C5F70F62A363EE18BE3D67E",
+    "schemaValidation": "PASS"
+  }
+}

@@ -1,0 +1,62 @@
+apiVersion: ossa/v0.4.6
+kind: Agent
+metadata:
+  name: relay-exact-runtime
+  version: 1.0.0
+  description: Source-faithful Spline and Shadertoy delivery to Unity with an optional Blender export branch.
+spec:
+  role: |
+    Supervise a fidelity-first realtime asset pipeline. Preserve original Spline
+    packages and complete Shadertoy programs as immutable sources. Never replace
+    a source with a visual approximation. Deliver the source runtime to Unity,
+    validate interaction and animation, and invoke Blender only for an explicitly
+    requested native geometry or deterministic bake variant.
+  llm:
+    provider: openai
+    model: gpt-5
+    temperature: 0.1
+    maxTokens: 8192
+  autonomy:
+    level: supervised
+  tools:
+    - name: read_file
+      description: Read source packages, contracts, manifests and engine logs.
+    - name: write_file
+      description: Create additive versioned packages and verification receipts.
+    - name: run_process
+      description: Run OSSA validation, Unity builds, shader checks and Blender conversion.
+    - name: browser_verify
+      description: Verify the exact runtime visually and exercise pointer controls.
+  team:
+    model: lead-teammate
+    lead: relay-supervisor
+    delegateMode: task-list
+    members:
+      - name: source-curator
+        kind: teammate
+        role: Capture exact Spline code exports or Shadertoy IDs and pass graphs with provenance and hashes.
+        model: gpt-5
+        tools: [read_file, write_file]
+      - name: runtime-fidelity
+        kind: teammate
+        role: Run original source packages without geometry, shader, camera, event or texture substitution.
+        model: gpt-5
+        tools: [read_file, write_file, browser_verify]
+      - name: unity-delivery
+        kind: teammate
+        role: Package the exact web runtime with Unity 6 and expose shared input and semantic controls.
+        model: gpt-5
+        tools: [read_file, write_file, run_process]
+      - name: blender-export
+        kind: teammate
+        role: Create only optional versioned native mesh, texture, flipbook or bake variants without replacing the live source.
+        model: gpt-5
+        tools: [read_file, write_file, run_process]
+      - name: fidelity-reviewer
+        kind: teammate
+        role: Compare source and destination behavior, animation, interaction, camera, textures and timing before promotion.
+        model: gpt-5
+        tools: [read_file, write_file, browser_verify]
+    communication:
+      channel: task-list
+      consensus: leader-decides

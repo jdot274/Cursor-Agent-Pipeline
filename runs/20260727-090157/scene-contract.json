@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "coordinateSystem": "unity-y-up-left-handed-host",
+  "sourceRuntime": "web-exact",
+  "inputs": {
+    "morph": { "type": "float", "min": 0, "max": 1, "default": 0.5 },
+    "flow": { "type": "float", "min": 0, "max": 1, "default": 0.5 },
+    "heat": { "type": "float", "min": 0, "max": 1, "default": 0.5 }
+  },
+  "views": ["spline", "shadertoy", "unity", "composite"],
+  "interaction": ["pointer", "touch", "spline-events", "shared-variables"],
+  "derivativePolicy": {
+    "blender": "optional-bake-or-native-mesh",
+    "unreal": "optional-labeled-native-variant"
+  }
+}

@@ -1,0 +1,1564 @@
+<!doctype html>
+<!-- vanguard-golf-game-v1 · game shell iteration · base: vanguard-golf-sdf-v5 DEPLOYED master (https://vanguard-golf-sdf-v5.vercel.app) -->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Vanguard Golf</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><circle cx='8' cy='8' r='7' fill='%2339ff6a'/></svg>">
+  <style>
+    :root{
+      color-scheme:dark;
+      /* ── palette ─────────────────────────────────────────────── */
+      --accent:#39ff6a;
+      --accent-hi:#b9ffce;
+      --accent-glow:rgba(57,255,106,.45);
+      --gold:#ffd76a;
+      --amber:#ffb35c;
+      --ink:#ecfff2;
+      --ink-dim:rgba(219,248,229,.78);
+      --ink-faint:rgba(197,235,209,.60);
+      /* ── glass elevation scale (1 = chips, 2 = panel, 3 = modal) ─ */
+      --glass-blur-1:14px;  --glass-sat-1:150%;
+      --glass-blur-2:28px;  --glass-sat-2:195%;
+      --glass-blur-3:40px;  --glass-sat-3:200%;
+      --glass-fill-1:rgba(9,23,14,.30);
+      --glass-fill-2:rgba(7,20,12,.36);
+      --glass-fill-3:rgba(5,17,10,.52);
+      --glass-shadow-1:0 6px 20px rgba(0,2,1,.38);
+      --glass-shadow-2:0 20px 56px rgba(0,3,1,.5);
+      --glass-shadow-3:0 32px 88px rgba(0,3,1,.62);
+      /* ── hairlines & sheen ───────────────────────────────────── */
+      --hair-hi:rgba(255,255,255,.30);
+      --hair-mid:rgba(255,255,255,.10);
+      --hair-lo:rgba(0,0,0,.42);
+      --grain-opacity:.05;
+      /* ── shape & motion ──────────────────────────────────────── */
+      --radius-lg:22px; --radius-md:14px; --radius-pill:999px;
+      --ease:cubic-bezier(.4,0,.2,1);
+      --dur:180ms;
+      --scene-fade:260ms;
+      /* ── swing meter (tunable) ───────────────────────────────── */
+      --meter-w:min(420px,72vw);
+    }
+    *{box-sizing:border-box}
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#020805;color:var(--ink);
+      font-family:"SF Pro Display",Inter,ui-sans-serif,system-ui,"Segoe UI",sans-serif;
+      -webkit-font-smoothing:antialiased;user-select:none;-webkit-user-select:none}
+    canvas#gl{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+
+    /* ── glass material (v5 lineage) ─────────────────────────────── */
+    .glass{
+      position:relative;
+      border:1px solid var(--hair-mid);
+      background:
+        linear-gradient(135deg,rgba(255,255,255,.075),rgba(255,255,255,.015) 42%,rgba(2,10,5,.06)),
+        var(--glass-fill-2);
+      -webkit-backdrop-filter:blur(var(--glass-blur-2)) saturate(var(--glass-sat-2));
+      backdrop-filter:blur(var(--glass-blur-2)) saturate(var(--glass-sat-2));
+      box-shadow:
+        var(--glass-shadow-2),
+        inset 0 1px 0 var(--hair-hi),
+        inset 1px 0 0 rgba(255,255,255,.08),
+        inset 0 -1px 0 var(--hair-lo),
+        inset -1px 0 0 rgba(0,0,0,.20);
+    }
+    .glass::before{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+      background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,0) 36%)}
+    .glass::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;
+      opacity:var(--grain-opacity);mix-blend-mode:overlay;
+      background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='140' height='140' filter='url(%23n)'/></svg>")}
+    .glass.e1{
+      background:linear-gradient(135deg,rgba(255,255,255,.06),rgba(255,255,255,.012) 45%,rgba(2,10,5,.05)),var(--glass-fill-1);
+      -webkit-backdrop-filter:blur(var(--glass-blur-1)) saturate(var(--glass-sat-1));
+      backdrop-filter:blur(var(--glass-blur-1)) saturate(var(--glass-sat-1));
+      box-shadow:var(--glass-shadow-1),inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.32)}
+    .glass.e3{
+      background:linear-gradient(135deg,rgba(255,255,255,.08),rgba(255,255,255,.02) 42%,rgba(2,10,5,.08)),var(--glass-fill-3);
+      -webkit-backdrop-filter:blur(var(--glass-blur-3)) saturate(var(--glass-sat-3));
+      backdrop-filter:blur(var(--glass-blur-3)) saturate(var(--glass-sat-3));
+      box-shadow:var(--glass-shadow-3),inset 0 1px 0 var(--hair-hi),inset 0 -1px 0 var(--hair-lo)}
+    @supports not ((backdrop-filter:blur(2px)) or (-webkit-backdrop-filter:blur(2px))){
+      .glass{background:rgba(5,16,10,.93)}
+      .glass.e1{background:rgba(6,18,11,.90)}
+      .glass.e3{background:rgba(4,14,9,.96)}
+    }
+
+    /* ── scenes & veil ───────────────────────────────────────────── */
+    .scene{position:fixed;inset:0;z-index:30;display:none;pointer-events:none}
+    .scene.on{display:block}
+    .scene > *{pointer-events:auto}
+    #veil{position:fixed;inset:0;z-index:90;background:
+      radial-gradient(120% 120% at 50% 50%,rgba(2,8,5,.55),#020805 78%);
+      opacity:0;pointer-events:none;transition:opacity var(--scene-fade) var(--ease)}
+    #veil.show{opacity:1;pointer-events:auto}
+
+    /* ── buttons ─────────────────────────────────────────────────── */
+    .mbtn{
+      display:flex;align-items:center;justify-content:center;gap:10px;
+      min-width:250px;padding:15px 30px;border-radius:var(--radius-pill);cursor:pointer;
+      font:700 13px/1 "SF Pro Display",Inter,system-ui,sans-serif;letter-spacing:.24em;color:var(--ink);
+      transition:transform var(--dur) var(--ease),box-shadow var(--dur) var(--ease),background var(--dur) var(--ease),color var(--dur) var(--ease)}
+    .mbtn:hover,.mbtn:focus-visible{color:#eafff0;transform:translateY(-1px);
+      background:linear-gradient(135deg,rgba(57,255,106,.16),rgba(57,255,106,.05) 55%),var(--glass-fill-2);
+      box-shadow:var(--glass-shadow-1),inset 0 1px 0 var(--hair-hi),0 0 24px rgba(57,255,106,.22)}
+    .mbtn:active{transform:translateY(0) scale(.985)}
+    .mbtn:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+    .mbtn.primary{color:#04180a;background:linear-gradient(160deg,#8dffae,#39ff6a 60%,#17c94b);
+      border-color:rgba(255,255,255,.35);
+      box-shadow:0 12px 34px rgba(23,201,75,.35),inset 0 1px 0 rgba(255,255,255,.6)}
+    .mbtn.primary:hover,.mbtn.primary:focus-visible{color:#04180a;
+      box-shadow:0 14px 40px rgba(23,201,75,.5),inset 0 1px 0 rgba(255,255,255,.7),0 0 34px rgba(57,255,106,.4)}
+    .mbtn.slim{min-width:0;padding:11px 20px;font-size:11px;letter-spacing:.18em}
+
+    /* ── title scene ─────────────────────────────────────────────── */
+    #scene-title::before,#scene-select::before,#scene-score::before{content:"";position:absolute;inset:0;pointer-events:none;
+      background:linear-gradient(180deg,rgba(1,6,3,.62),rgba(1,6,3,.10) 32%,rgba(1,6,3,.16) 62%,rgba(1,6,3,.72)),
+      radial-gradient(130% 90% at 50% 42%,transparent 40%,rgba(1,6,3,.42))}
+    #scene-title .wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+    .logo{display:flex;flex-direction:column;align-items:center;gap:2px;margin-bottom:26px;
+      animation:logo-in 800ms var(--ease) both;transform:perspective(700px) rotateX(6deg)}
+    @keyframes logo-in{from{opacity:0;transform:perspective(700px) rotateX(6deg) translateY(18px)}to{opacity:1;transform:perspective(700px) rotateX(6deg) translateY(0)}}
+    .logo .kick{font:700 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.55em;color:var(--ink-faint);margin-bottom:12px}
+    .logo h1{margin:0;font-size:clamp(52px,9.5vw,104px);line-height:.88;font-weight:850;font-style:italic;
+      letter-spacing:-.03em;text-transform:uppercase;text-align:center;
+      background:linear-gradient(175deg,#ffffff 12%,#c9ffdb 38%,#39ff6a 72%,#0f8f38 96%);
+      -webkit-background-clip:text;background-clip:text;color:transparent;
+      filter:drop-shadow(0 6px 26px rgba(57,255,106,.28)) drop-shadow(0 2px 3px rgba(0,0,0,.7))}
+    .logo h1 span{display:block;font-size:.52em;letter-spacing:.34em;font-style:italic;
+      background:linear-gradient(175deg,#eafff1 20%,#7dffa2 80%);
+      -webkit-background-clip:text;background-clip:text;color:transparent}
+    .logo .rule{width:min(360px,60vw);height:2px;margin-top:18px;border-radius:2px;
+      background:linear-gradient(90deg,transparent,var(--accent) 30%,var(--accent-hi) 50%,var(--accent) 70%,transparent);
+      box-shadow:0 0 18px var(--accent-glow)}
+    .menu{display:flex;flex-direction:column;gap:12px;animation:menu-in 700ms 150ms var(--ease) both}
+    @keyframes menu-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+    .foot{position:absolute;bottom:18px;left:0;right:0;display:flex;justify-content:center;gap:10px;
+      font:600 9px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;color:var(--ink-faint)}
+
+    /* ── course select ───────────────────────────────────────────── */
+    #scene-select .wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:26px;padding:20px}
+    .sel-head{font:800 22px/1 "SF Pro Display",Inter,system-ui,sans-serif;font-style:italic;letter-spacing:.3em;text-transform:uppercase;
+      background:linear-gradient(120deg,#f2fff6 30%,#9fffc0 75%);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .cards{display:flex;gap:18px;flex-wrap:wrap;justify-content:center}
+    .card{width:236px;padding:14px;border-radius:var(--radius-lg);cursor:pointer;text-align:left;color:var(--ink);
+      transition:transform var(--dur) var(--ease),box-shadow var(--dur) var(--ease)}
+    .card:hover,.card:focus-visible{transform:translateY(-4px);
+      box-shadow:var(--glass-shadow-2),inset 0 1px 0 var(--hair-hi),0 0 30px rgba(57,255,106,.20)}
+    .card:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+    .card canvas{width:100%;height:118px;border-radius:var(--radius-md);display:block;
+      border:1px solid rgba(255,255,255,.10);box-shadow:inset 0 1px 6px rgba(0,0,0,.5)}
+    .card .cname{margin:12px 2px 4px;font:800 14px/1.1 "SF Pro Display",Inter,sans-serif;font-style:italic;letter-spacing:.08em}
+    .card .cmeta{display:flex;align-items:center;gap:8px;margin:0 2px;
+      font:600 9.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.12em;color:var(--ink-dim)}
+    .card .cmeta b{color:var(--accent-hi)}
+    .card .cmeta .best{margin-left:auto;color:var(--gold)}
+
+    /* ── play HUD ────────────────────────────────────────────────── */
+    #hud-hole{position:fixed;top:16px;left:16px;display:flex;align-items:center;gap:10px;
+      padding:10px 16px;border-radius:var(--radius-pill);
+      font:700 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;color:var(--ink-dim)}
+    #hud-hole b{color:var(--ink)}
+    #hud-hole .sep{width:1px;height:12px;background:rgba(255,255,255,.14)}
+    #hud-stroke{position:fixed;top:16px;left:50%;transform:translateX(-50%);
+      display:flex;align-items:center;gap:12px;padding:10px 18px;border-radius:var(--radius-pill);
+      font:700 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.14em;color:var(--ink-dim)}
+    #hud-stroke b{color:var(--accent-hi);font-size:14px}
+    .iconbtn{position:fixed;width:38px;height:38px;display:grid;place-items:center;border-radius:50%;cursor:pointer;
+      color:var(--ink-dim);transition:color var(--dur) var(--ease),box-shadow var(--dur) var(--ease)}
+    .iconbtn:hover,.iconbtn:focus-visible{color:var(--ink);box-shadow:var(--glass-shadow-1),inset 0 1px 0 var(--hair-hi),0 0 16px var(--accent-glow)}
+    .iconbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+    #btn-gear{top:16px;right:16px}
+    #btn-pause{top:16px;right:64px}
+
+    /* swing meter + button */
+    #swing-dock{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);
+      display:flex;flex-direction:column;align-items:center;gap:12px}
+    #meter{width:var(--meter-w);padding:10px 14px 12px;border-radius:var(--radius-lg);
+      opacity:0;transform:translateY(6px);transition:opacity 160ms var(--ease),transform 160ms var(--ease)}
+    #meter.live{opacity:1;transform:none}
+    #meter .mlabel{display:flex;justify-content:space-between;
+      font:700 9px/1 ui-monospace,Menlo,monospace;letter-spacing:.22em;color:var(--ink-faint);margin-bottom:8px}
+    #meter .mlabel b{color:var(--accent-hi)}
+    .mtrack{position:relative;height:14px;border-radius:var(--radius-pill);overflow:hidden;
+      background:rgba(1,8,4,.55);border:1px solid rgba(255,255,255,.09);
+      box-shadow:inset 0 2px 5px rgba(0,0,0,.6)}
+    .mfill{position:absolute;inset:0;width:0%;border-radius:inherit;
+      background:linear-gradient(90deg,#0f8f38,#39ff6a 55%,#d3ffe0 92%);
+      box-shadow:0 0 16px rgba(57,255,106,.5)}
+    .msweet{position:absolute;top:0;bottom:0;border-left:2px solid rgba(255,255,255,.75);
+      box-shadow:0 0 8px rgba(255,255,255,.6)}
+    #swingBtn{min-width:210px}
+    #swing-hint{font:600 9.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.16em;color:var(--ink-faint);
+      padding:7px 13px;border-radius:var(--radius-pill)}
+
+    /* toast + result */
+    #toast{position:fixed;top:78px;left:50%;transform:translate(-50%,-8px);z-index:60;
+      padding:11px 22px;border-radius:var(--radius-pill);
+      font:700 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.2em;color:var(--amber);
+      opacity:0;transition:opacity 220ms var(--ease),transform 220ms var(--ease);pointer-events:none}
+    #toast.show{opacity:1;transform:translate(-50%,0)}
+    #scene-result .rcard{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+      display:flex;flex-direction:column;align-items:center;gap:8px;padding:36px 62px;border-radius:28px;
+      animation:pop-in 460ms cubic-bezier(.2,1.5,.4,1) both}
+    @keyframes pop-in{from{opacity:0;transform:translate(-50%,-50%) scale(.82)}to{opacity:1;transform:translate(-50%,-50%) scale(1)}}
+    .rgrade{font-size:clamp(42px,7vw,72px);font-weight:850;font-style:italic;letter-spacing:.02em;line-height:1;
+      background:linear-gradient(170deg,#ffffff 15%,var(--accent) 80%);
+      -webkit-background-clip:text;background-clip:text;color:transparent;
+      filter:drop-shadow(0 4px 20px var(--accent-glow))}
+    .rcard.gold .rgrade{background:linear-gradient(170deg,#fff8e2 15%,var(--gold) 80%);
+      filter:drop-shadow(0 4px 20px rgba(255,215,106,.45))}
+    .rcard.over .rgrade{background:linear-gradient(170deg,#fff0e2 15%,var(--amber) 80%);
+      filter:drop-shadow(0 4px 20px rgba(255,179,92,.35))}
+    .rsub{font:700 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.3em;color:var(--ink-dim)}
+
+    /* pause & modal menus */
+    .modal{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);
+      display:flex;flex-direction:column;align-items:center;gap:12px;padding:34px 44px 30px;border-radius:28px;min-width:340px}
+    .modal .mtitle{font:800 16px/1 "SF Pro Display",Inter,sans-serif;font-style:italic;letter-spacing:.34em;text-transform:uppercase;
+      margin-bottom:12px;background:linear-gradient(120deg,#f2fff6 30%,#9fffc0 75%);
+      -webkit-background-clip:text;background-clip:text;color:transparent}
+    .modal .mnote{font:600 9px/1.6 ui-monospace,Menlo,monospace;letter-spacing:.1em;color:var(--ink-faint);text-align:center;margin-top:8px}
+
+    /* scorecard */
+    #scene-score .wrap{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px}
+    .score-panel{padding:30px 38px 26px;border-radius:28px;min-width:min(480px,92vw)}
+    .score-panel .mtitle{text-align:center;display:block;margin-bottom:18px}
+    table.sc{border-collapse:collapse;width:100%;font:600 11px/1 ui-monospace,Menlo,monospace;letter-spacing:.1em}
+    table.sc th{font-weight:700;color:var(--ink-faint);letter-spacing:.2em;font-size:9px;text-transform:uppercase;
+      padding:6px 14px;border-bottom:1px solid rgba(255,255,255,.12);text-align:left}
+    table.sc td{padding:11px 14px;color:var(--ink-dim);border-bottom:1px solid rgba(255,255,255,.05)}
+    table.sc td b{color:var(--ink)}
+    table.sc tr.now td{color:var(--accent-hi)}
+    table.sc td.delta.under{color:var(--accent)}
+    table.sc td.delta.over{color:var(--amber)}
+    table.sc tr.total td{border-bottom:none;padding-top:14px;color:var(--ink);font-weight:800}
+    table.sc td.best{color:var(--gold)}
+    .score-actions{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+
+    /* settings panel (v5 sliders live here) */
+    #settings{position:fixed;z-index:70;top:64px;right:16px;width:min(360px,calc(100vw - 32px));
+      padding:16px 18px 15px;border-radius:var(--radius-lg);display:none}
+    #settings.on{display:block;animation:hud-in 320ms var(--ease) both}
+    @keyframes hud-in{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:none}}
+    #settings .top{display:flex;align-items:center;gap:10px}
+    .brand{font-size:13px;font-weight:700;letter-spacing:.05em;
+      background:linear-gradient(120deg,#f2fff6 30%,#9fffc0 75%);
+      -webkit-background-clip:text;background-clip:text;color:transparent}
+    .badge{margin-left:auto;font:700 8.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.16em;color:var(--accent-hi);
+      border:1px solid rgba(120,255,160,.22);border-radius:var(--radius-pill);padding:6px 9px;background:rgba(30,90,48,.22);
+      box-shadow:inset 0 1px 0 rgba(255,255,255,.14),0 0 14px rgba(57,255,106,.10)}
+    .controls{display:grid;grid-template-columns:60px 1fr 52px;gap:9px 12px;align-items:center;margin-top:15px}
+    .controls label{font-size:9.5px;font-weight:650;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-dim)}
+    output{font:600 10.5px/1 ui-monospace,Menlo,monospace;color:#cbffdb;text-align:center;padding:5px 4px;border-radius:8px;
+      background:rgba(1,8,4,.48);border:1px solid rgba(255,255,255,.09);
+      box-shadow:inset 0 1px 2px rgba(0,0,0,.4),inset 0 -1px 0 rgba(255,255,255,.04)}
+    input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:22px;margin:0;padding:0;background:transparent;cursor:pointer;--p:50%}
+    input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:var(--radius-pill);
+      background:linear-gradient(90deg,rgba(57,255,106,.95),rgba(170,255,197,.85) var(--p),rgba(4,14,8,.52) var(--p),rgba(4,14,8,.46));
+      box-shadow:inset 0 1px 2px rgba(0,0,0,.55),0 1px 0 rgba(255,255,255,.05),0 0 10px rgba(57,255,106,.08)}
+    input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:17px;height:17px;margin-top:-6px;border-radius:50%;
+      background:radial-gradient(circle at 34% 28%,#ffffff,#c9ffdb 32%,var(--accent) 72%,#17c94b);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.4),0 2px 6px rgba(0,0,0,.55),0 0 10px var(--accent-glow);
+      transition:transform var(--dur) var(--ease)}
+    input[type=range]:hover::-webkit-slider-thumb{transform:scale(1.10)}
+    input[type=range]:focus-visible{outline:none}
+    input[type=range]:focus-visible::-webkit-slider-thumb{
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.6),0 0 0 3px rgba(57,255,106,.35),0 0 18px var(--accent-glow)}
+    input[type=range]::-moz-range-track{height:5px;border-radius:var(--radius-pill);background:rgba(255,255,255,.08);
+      box-shadow:inset 0 1px 2px rgba(0,0,0,.55)}
+    input[type=range]::-moz-range-progress{height:5px;border-radius:var(--radius-pill);
+      background:linear-gradient(90deg,rgba(57,255,106,.85),rgba(150,255,182,.70))}
+    input[type=range]::-moz-range-thumb{width:17px;height:17px;border:none;border-radius:50%;
+      background:radial-gradient(circle at 34% 28%,#ffffff,#c9ffdb 32%,var(--accent) 72%,#17c94b);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.4),0 2px 6px rgba(0,0,0,.55),0 0 10px var(--accent-glow)}
+    #settings .row{display:flex;gap:10px;margin-top:14px}
+
+    /* telemetry dock */
+    .dock{position:fixed;z-index:10;right:16px;bottom:16px;display:flex;flex-direction:column;align-items:flex-end;gap:8px;pointer-events:none}
+    .chip{display:flex;align-items:center;gap:8px;border-radius:var(--radius-pill);padding:8px 13px;
+      font:600 9.5px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;color:var(--ink-dim)}
+    .chip b{color:#d6ffe2;font-weight:700}
+    .chip .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);
+      box-shadow:0 0 8px var(--accent-glow);animation:pulse 2.4s var(--ease) infinite}
+    @keyframes pulse{0%,100%{opacity:1}50%{opacity:.45}}
+    .chip .sep{width:1px;height:10px;background:rgba(255,255,255,.14)}
+
+    /* error state */
+    #err{position:fixed;inset:0;z-index:100;display:none;place-items:center;background:#020805}
+    #err.on{display:grid}
+    #err .box{max-width:420px;text-align:center;padding:40px;border-radius:28px}
+    #err h2{margin:0 0 10px;font-style:italic;letter-spacing:.1em}
+    #err p{color:var(--ink-dim);font-size:13px;line-height:1.6}
+  </style>
+</head>
+<body>
+  <canvas id="gl"></canvas>
+
+  <!-- ── veil (scene transition) ─────────────────────────────────── -->
+  <div id="veil"></div>
+
+  <!-- ── TITLE ───────────────────────────────────────────────────── -->
+  <section class="scene" id="scene-title" aria-label="Main menu">
+    <div class="wrap">
+      <div class="logo">
+        <div class="kick">RELAY&nbsp;·&nbsp;SDF&nbsp;TOUR</div>
+        <h1>Vanguard<span>Golf</span></h1>
+        <div class="rule"></div>
+      </div>
+      <nav class="menu" data-nav>
+        <button class="mbtn primary glass" data-act="play">PLAY</button>
+        <button class="mbtn glass" data-act="select">COURSE SELECT</button>
+        <button class="mbtn glass" data-act="roam">FREE ROAM</button>
+        <button class="mbtn glass" data-act="settings">SETTINGS</button>
+      </nav>
+      <div class="foot">
+        <span class="chip glass e1">VANGUARD UBER LINEAGE · BASE v5</span>
+        <span class="chip glass e1">WEBGL2 RAYMARCHED SDF</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── COURSE SELECT ───────────────────────────────────────────── -->
+  <section class="scene" id="scene-select" aria-label="Course select">
+    <div class="wrap">
+      <div class="sel-head">Course Select</div>
+      <div class="cards" id="cards" data-nav></div>
+      <button class="mbtn slim glass" data-act="back">BACK</button>
+    </div>
+  </section>
+
+  <!-- ── PLAY HUD ────────────────────────────────────────────────── -->
+  <section class="scene" id="scene-play" aria-label="Play HUD">
+    <div id="hud-hole" class="glass e1">
+      <b id="holeNum">HOLE 1/3</b><span class="sep"></span>
+      <span id="holeName">EMERALD RISE</span><span class="sep"></span>
+      <span>PAR <b id="holePar">3</b></span>
+    </div>
+    <div id="hud-stroke" class="glass e1">STROKE <b id="strokeNum">0</b></div>
+    <button id="btn-pause" class="iconbtn glass e1" aria-label="Pause (Esc)">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor"><rect x="2" y="1.5" width="3" height="9" rx="1"/><rect x="7" y="1.5" width="3" height="9" rx="1"/></svg>
+    </button>
+    <button id="btn-gear" class="iconbtn glass e1" aria-label="Graphics settings">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    </button>
+    <div id="swing-dock">
+      <div id="meter" class="glass e1">
+        <div class="mlabel"><span>POWER</span><b id="powerPct">0%</b></div>
+        <div class="mtrack"><div class="mfill" id="mfill"></div><div class="msweet" id="msweet"></div></div>
+      </div>
+      <button id="swingBtn" class="mbtn primary glass">HOLD TO SWING</button>
+      <div id="swing-hint" class="glass e1">DRAG / ◄ ► AIM · HOLD SPACE OR BUTTON · RELEASE TO STRIKE</div>
+    </div>
+  </section>
+
+  <!-- ── PAUSE ───────────────────────────────────────────────────── -->
+  <section class="scene" id="scene-pause" aria-label="Paused">
+    <div class="modal glass e3">
+      <div class="mtitle">Paused</div>
+      <nav class="menu" data-nav>
+        <button class="mbtn primary glass" data-act="resume">RESUME</button>
+        <button class="mbtn glass" data-act="freecam">FREE ROAM</button>
+        <button class="mbtn glass" data-act="restart">RESTART HOLE</button>
+        <button class="mbtn glass" data-act="quit">QUIT TO MENU</button>
+      </nav>
+      <div class="mnote">WORLD FROZEN · ESC TO RESUME</div>
+    </div>
+  </section>
+
+  <!-- ── FREE ROAM HUD ───────────────────────────────────────────── -->
+  <section class="scene" id="scene-roam" aria-label="Free roam">
+    <div id="hud-roam" class="glass e1" style="position:fixed;top:16px;left:50%;transform:translateX(-50%);padding:10px 18px;border-radius:999px;font:700 10px/1 ui-monospace,Menlo,monospace;letter-spacing:.18em;color:var(--ink-dim)">
+      FREE ROAM · DRAG LOOK · WASD FLY · WHEEL DOLLY · ESC BACK
+    </div>
+  </section>
+
+  <!-- ── RESULT ──────────────────────────────────────────────────── -->
+  <section class="scene" id="scene-result" aria-label="Hole result">
+    <div class="rcard glass e3" id="rcard">
+      <div class="rgrade" id="rgrade">PAR</div>
+      <div class="rsub" id="rsub">HOLE 1 · 3 STROKES</div>
+    </div>
+  </section>
+
+  <!-- ── SCORECARD ───────────────────────────────────────────────── -->
+  <section class="scene" id="scene-score" aria-label="Scorecard">
+    <div class="wrap">
+      <div class="score-panel glass e3">
+        <span class="mtitle sel-head" style="font-size:17px">Scorecard</span>
+        <table class="sc" id="scTable"></table>
+      </div>
+      <div class="score-actions" data-nav>
+        <button class="mbtn primary slim glass" data-act="next" id="btnNext">NEXT HOLE</button>
+        <button class="mbtn slim glass" data-act="replay">REPLAY HOLE</button>
+        <button class="mbtn slim glass" data-act="menu">MENU</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SETTINGS (graphics) ─────────────────────────────────────── -->
+  <section id="settings" class="glass" aria-label="Graphics settings">
+    <div class="top">
+      <div class="brand">Graphics · Vanguard Uber</div>
+      <div class="badge">PERSISTED</div>
+    </div>
+    <div class="controls">
+      <label for="morph">Morph</label><input id="morph" type="range" min="0" max="1" step=".001" value=".62"><output>.620</output>
+      <label for="flow">Flow</label><input id="flow" type="range" min="0" max="1" step=".001" value=".48"><output>.480</output>
+      <label for="heat">Heat</label><input id="heat" type="range" min="0" max="1" step=".001" value=".78"><output>.780</output>
+      <label for="glass">Glass</label><input id="glass" type="range" min="0" max="1" step=".001" value=".72"><output>.720</output>
+    </div>
+    <div class="row">
+      <button class="mbtn slim glass" id="btnResetGfx" style="min-width:0;flex:1">RESET</button>
+      <button class="mbtn slim glass" id="btnCloseGfx" style="min-width:0;flex:1">CLOSE</button>
+    </div>
+  </section>
+
+  <!-- ── toast + dock ────────────────────────────────────────────── -->
+  <div id="toast" class="glass e1"></div>
+  <div class="dock">
+    <div class="chip glass e1"><span class="dot"></span>FPS <b id="fpsOut">—</b><span class="sep"></span><b id="sceneOut">title</b></div>
+  </div>
+
+  <!-- ── WebGL2 unsupported ──────────────────────────────────────── -->
+  <div id="err"><div class="box glass e3">
+    <h2>WebGL2 Required</h2>
+    <p>Vanguard Golf renders its entire course as a raymarched signed-distance field and needs WebGL2.
+    Try a current version of Chrome, Edge, Firefox, or Safari with hardware acceleration enabled.</p>
+  </div></div>
+
+  <script type="module">
+    // ═══════════════════════════════════════════════════════════════
+    //  vanguard-golf-game-v1 — playable game shell
+    //  Base: vanguard-golf-sdf-v5 deployed master (shader + glass HUD lineage).
+    //  Scenes: title · select · play · pause · roam · result · score
+    // ═══════════════════════════════════════════════════════════════
+
+    // ── boot guard ─────────────────────────────────────────────────
+    const canvas = document.querySelector("#gl");
+    const gl = canvas.getContext("webgl2", { antialias: false, alpha: false });
+    if (!gl) {
+      document.querySelector("#err").classList.add("on");
+      throw new Error("WebGL2 required");
+    }
+
+    // ═══ TUNABLES ═════════════════════════════════════════════════
+    // Hole table — edit freely: seed offsets reshape terrain, amp scales
+    // hills, accent recolors the world, tee/cup are xz positions.
+    const HOLES = [
+      { id: 1, name: "EMERALD RISE", par: 3, seed: [  0.0,   0.0], amp: 1.00, accent: [0.22, 1.00, 0.38], tee: [-7.5,  6.0], cup: [ 6.5, -3.0] },
+      { id: 2, name: "NEON HOLLOW",  par: 4, seed: [ 37.2,  11.8], amp: 1.30, accent: [0.16, 0.92, 0.78], tee: [-9.0, -5.5], cup: [ 7.5,  5.0] },
+      { id: 3, name: "AURORA DUNES", par: 5, seed: [ 83.5,  42.1], amp: 0.72, accent: [0.86, 0.98, 0.30], tee: [-10.0, 1.0], cup: [ 9.0, -6.5] },
+    ];
+    const PHYS = {
+      gravity: 9.8, launchDeg: 34,
+      minPower: 3.4, maxPower: 15.5,        // strike speed range (world units/s)
+      restitution: 0.36, bounceFriction: 0.58,
+      rollFriction: 1.45, slopeAccel: 4.6,
+      puttRange: 5.5, puttDeg: 7, puttMin: 1.2, puttMax: 9.0, // short-game club switch
+      stopSpeed: 0.16, ballRadius: 0.13,
+      cupRadius: 0.26, cupCaptureSpeed: 2.6,
+      cupAssistRadius: 0.55, cupAssistPull: 2.2, // gentle arcade magnetism
+      outOfBounds: 24.0,
+    };
+    const METER = { speed: 1.15, sweet: 0.86 }; // ping-pong charge rate (units/s), sweet-spot marker
+    const CAM = {
+      playDist: 4.8, playHeight: 2.05, lookAhead: 3.2, lookUp: 0.4,
+      menuRadius: 12.5, menuHeight: 5.4, menuYawRate: 0.07,
+      roamSpeed: 6.5, roamFast: 16.0, smooth: 5.0,
+      distMin: 3.0, distMax: 9.0,
+    };
+    const STORE_KEY = "vanguardGolfGame.v1";
+
+    // ═══ SHADERS ══════════════════════════════════════════════════
+    const VS = `#version 300 es
+    precision highp float;
+    const vec2 P[3] = vec2[3](vec2(-1,-1), vec2(3,-1), vec2(-1,3));
+    void main(){ gl_Position = vec4(P[gl_VertexID], 0.0, 1.0); }`;
+
+    const FS = `#version 300 es
+    precision highp float;
+    out vec4 fragColor;
+    uniform vec2  uResolution;
+    uniform float uTime;
+    uniform float uMorph;
+    uniform float uFlow;
+    uniform float uHeat;
+    uniform float uGlass;
+    uniform vec2  uPointer;   // NDC [-1,1]
+    uniform vec3  uCamPos;
+    uniform vec3  uCamTa;
+    uniform vec2  uSeed;      // per-hole FBM offset
+    uniform float uAmp;       // per-hole hill amplitude scale
+    uniform vec3  uAccent;    // per-hole neon accent
+    uniform vec2  uCup;       // pin position (xz)
+    uniform vec2  uTee;       // tee position (xz)
+    uniform vec3  uBall;      // ball centre (y < -50 hides)
+    uniform vec2  uAim;       // normalized aim dir (xz)
+    uniform float uAimLen;    // guide length (0 hides)
+    uniform float uCharge;    // 0..1 swing charge (ball glow)
+
+    // ── VanguardNoise (GLSL port of VanguardNoise.hlsl) ──────────
+    float Vanguard_Hash21(vec2 p) {
+      vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+      p3 += dot(p3, p3.yzx + 33.33);
+      return fract((p3.x + p3.y) * p3.z);
+    }
+    vec2 Vanguard_Hash22(vec2 p) {
+      vec3 p3 = fract(vec3(p.xyx) * vec3(0.1031, 0.1030, 0.0973));
+      p3 += dot(p3, p3.yzx + 33.33);
+      return fract((p3.xx + p3.yz) * p3.zy);
+    }
+    float Vanguard_ValueNoise(vec2 uv) {
+      vec2 i = floor(uv), f = fract(uv);
+      vec2 u = f * f * (3.0 - 2.0 * f);
+      float a = Vanguard_Hash21(i);
+      float b = Vanguard_Hash21(i + vec2(1,0));
+      float c = Vanguard_Hash21(i + vec2(0,1));
+      float d = Vanguard_Hash21(i + vec2(1,1));
+      return mix(mix(a,b,u.x), mix(c,d,u.x), u.y);
+    }
+    float Vanguard_FBM(vec2 uv, int octaves) {
+      float value = 0.0, amplitude = 0.5, frequency = 1.0;
+      for (int i = 0; i < 8; i++) {
+        if (i >= octaves) break;
+        value += amplitude * Vanguard_ValueNoise(uv * frequency);
+        amplitude *= 0.5; frequency *= 2.0;
+      }
+      return value;
+    }
+    vec2 Vanguard_Voronoi(vec2 uv) {
+      vec2 i = floor(uv), f = fract(uv);
+      float F1 = 8.0, F2 = 8.0;
+      for (int y = -2; y <= 2; y++)
+      for (int x = -2; x <= 2; x++) {
+        vec2 cell = vec2(float(x), float(y));
+        vec2 jitter = Vanguard_Hash22(i + cell);
+        vec2 delta = cell + jitter - f;
+        float d = dot(delta, delta);
+        if (d < F1) { F2 = F1; F1 = d; }
+        else if (d < F2) F2 = d;
+      }
+      return vec2(sqrt(F1), sqrt(F2));
+    }
+
+    // ── Golf course SDF (layered, per-hole parametric) ───────────
+    float terrainH(vec2 xz) {
+      vec2 q = xz + uSeed;
+      float hills = Vanguard_FBM(q * 0.085, 5);
+      float ridges = Vanguard_FBM(q * 0.22 + 17.0, 3);
+      float amp = mix(0.55, 2.35, uMorph) * uAmp;
+      return hills * amp + ridges * amp * 0.35 - 0.15;
+    }
+    float greenDip(vec2 xz) {
+      float g = length(xz - uCup);
+      return smoothstep(3.2, 1.1, g) * 0.55;
+    }
+    float groundY(vec2 xz) { return terrainH(xz) - greenDip(xz); }
+
+    float sdSeg2(vec2 p, vec2 a, vec2 b) {
+      vec2 pa = p - a, ba = b - a;
+      float h = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+      return length(pa - ba * h);
+    }
+    float fairwayMask(vec2 xz) {
+      return smoothstep(3.6, 1.3, sdSeg2(xz, uTee, uCup));
+    }
+
+    float sdTerrain(vec3 p) {
+      float gy = groundY(p.xz);
+      float cup = length(vec2(length(p.xz - uCup), p.y - (gy - 0.08))) - 0.07;
+      float ground = p.y - gy;
+      return min(ground, cup);
+    }
+
+    // Layered grass shell — Voronoi blades as thin SDF layer above terrain
+    float sdGrassLayer(vec3 p, float layer) {
+      float h = terrainH(p.xz);
+      float g = length(p.xz - uCup);
+      float onGreen = smoothstep(2.4, 1.0, g);
+      float fair = fairwayMask(p.xz);
+      float blade = Vanguard_Voronoi(p.xz * mix(9.0, 16.0, layer) + vec2(layer * 3.1, uTime * uFlow * (0.4 + layer))).x;
+      // flatten a lie around the ball so it never drowns in the shell
+      float nearBall = uBall.y > -50.0 ? smoothstep(0.22, 0.6, length(p.xz - uBall.xz)) : 1.0;
+      float height = mix(0.18, 0.42, layer) * (1.0 - onGreen * 0.85) * (1.0 - fair * 0.55)
+                   * mix(0.22, 1.0, nearBall) * (0.55 + uMorph * 0.45);
+      float wind = sin(p.x * 2.4 + p.z * 1.7 + uTime * (1.2 + uFlow * 3.0) + layer * 2.0) * 0.04 * uFlow;
+      float top = h + height + wind - onGreen * 0.4;
+      float d = p.y - top;
+      float shell = abs(d) - mix(0.012, 0.028, blade);
+      return mix(shell, 1e3, onGreen);
+    }
+
+    // Glass fairway sheet — refractive layer along the tee→cup corridor
+    float sdGlassFairway(vec3 p) {
+      float h = terrainH(p.xz);
+      float fair = fairwayMask(p.xz);
+      float sheet = abs(p.y - (h + 0.03)) - 0.01;
+      return mix(1e3, sheet, fair * (0.35 + uGlass * 0.65));
+    }
+
+    float sdBall(vec3 p) {
+      if (uBall.y < -50.0) return 1e3;
+      return length(p - uBall) - 0.13; // keep in sync with PHYS.ballRadius
+    }
+    float sdPole(vec3 p) {
+      float gy = groundY(uCup);
+      vec3 q = p - vec3(uCup.x, gy, uCup.y);
+      q.y -= clamp(q.y, 0.0, 1.75);
+      return length(q) - 0.028;
+    }
+    float sdFlag(vec3 p) {
+      float gy = groundY(uCup);
+      vec3 q = p - vec3(uCup.x, gy + 1.52, uCup.y);
+      float wave = sin(uTime * 2.6 + q.x * 5.0) * 0.05 * clamp(q.x / 0.5, 0.0, 1.0);
+      q.z -= wave;
+      // tapered banner 0..0.55 along +x (rounded-box SDF, height shrinks with x)
+      float tx = clamp(q.x / 0.55, 0.0, 1.0);
+      float halfH = mix(0.15, 0.025, tx);
+      vec3 b = vec3(0.275, halfH, 0.008);
+      vec3 d = abs(vec3(q.x - 0.275, q.y, q.z)) - b;
+      return length(max(d, 0.0)) + min(max(d.x, max(d.y, d.z)), 0.0) - 0.004;
+    }
+
+    vec2 opU(vec2 a, vec2 b) { return a.x < b.x ? a : b; }
+    // material ids: 0 turf · 1 glass fairway · 2 ball · 3 pole · 4 flag
+    vec2 mapScene(vec3 p) {
+      vec2 r = vec2(sdTerrain(p), 0.0);
+      r = opU(r, vec2(sdGrassLayer(p, 0.0), 0.0));
+      r = opU(r, vec2(sdGrassLayer(p, 0.45), 0.0));
+      r = opU(r, vec2(sdGrassLayer(p, 0.85), 0.0));
+      r = opU(r, vec2(sdGlassFairway(p), 1.0));
+      r = opU(r, vec2(sdBall(p), 2.0));
+      r = opU(r, vec2(sdPole(p), 3.0));
+      r = opU(r, vec2(sdFlag(p), 4.0));
+      return r;
+    }
+    float mapD(vec3 p) { return mapScene(p).x; }
+
+    vec3 calcNormal(vec3 p) {
+      vec2 e = vec2(0.0025, 0.0);
+      return normalize(vec3(
+        mapD(p + e.xyy) - mapD(p - e.xyy),
+        mapD(p + e.yxy) - mapD(p - e.yxy),
+        mapD(p + e.yyx) - mapD(p - e.yyx)));
+    }
+
+    // VanguardUber-style gradient (accent-driven)
+    vec3 applyGradient(vec3 base, vec2 uv) {
+      float ang = 55.0 * 0.017453292;
+      vec2 dir = vec2(cos(ang), sin(ang));
+      float t = clamp(dot(uv - 0.5, dir) + 0.5, 0.0, 1.0);
+      vec3 a = vec3(0.015, 0.18, 0.05);
+      vec3 b = uAccent;
+      return mix(base, base * mix(a, b, t) * 1.9, 0.80);
+    }
+    // VanguardUber-style fresnel glass
+    vec3 applyFresnel(vec3 base, vec3 n, vec3 v) {
+      float ndv = clamp(1.0 - dot(n, v), 0.0, 1.0);
+      float fres = pow(ndv, mix(1.4, 3.2, uGlass)) * (0.35 + uGlass * 1.4);
+      vec3 glassCol = mix(vec3(0.55, 1.0, 0.75), uAccent, 0.4);
+      return base + glassCol * fres * uGlass;
+    }
+
+    void main() {
+      vec2 frag = gl_FragCoord.xy;
+      vec2 uv = (frag - 0.5 * uResolution) / uResolution.y;
+
+      vec3 ro = uCamPos;
+      vec3 ta = uCamTa;
+      vec3 ww = normalize(ta - ro);
+      vec3 uu = normalize(cross(ww, vec3(0,1,0)));
+      vec3 vv = cross(uu, ww);
+      vec3 rd = normalize(uu * uv.x + vv * uv.y + ww * 1.55);
+
+      // pointer-driven grass ripple (Uber ripple contract)
+      float ripple = 0.0;
+      if (length(uPointer) > 0.01) {
+        vec2 hitXZ = ro.xz + rd.xz * ((0.8 - ro.y) / max(rd.y, 0.02));
+        float dist = length(hitXZ - uPointer * 8.0);
+        ripple = exp(-dist * 0.55) * sin(dist * 14.0 - uTime * 5.0) * 0.08;
+      }
+
+      float t = 0.0;
+      bool hit = false;
+      float mat = 0.0;
+      vec3 pos;
+      for (int i = 0; i < 96; i++) {
+        pos = ro + rd * t;
+        pos.y += ripple * 0.35;
+        vec2 dm = mapScene(pos);
+        if (dm.x < 0.0015) { hit = true; mat = dm.y; break; }
+        t += dm.x * 0.85;
+        if (t > 55.0) break;
+      }
+
+      // high black sky with accent horizon glow (v3 lineage: elegant fog)
+      vec3 skyLight = normalize(vec3(0.45, 0.85, 0.35));
+      vec3 col = mix(vec3(0.006, 0.016, 0.010), vec3(0.014, 0.05, 0.026), clamp(uv.y + 0.5, 0.0, 1.0));
+      col += uAccent * 0.10 * (0.15 + uHeat * 0.25) * (1.0 - exp(-length(uv) * 0.4));
+      col += uAccent * pow(clamp(dot(rd, skyLight), 0.0, 1.0), 9.0) * 0.14;
+      float horizon = pow(clamp(1.0 - abs(rd.y * 3.2), 0.0, 1.0), 3.0);
+      col += uAccent * horizon * (0.05 + uHeat * 0.05);
+
+      if (hit) {
+        vec3 n = calcNormal(pos);
+        vec3 v = normalize(-rd);
+        vec3 light = normalize(vec3(0.45, 0.85, 0.35));
+        float diff = clamp(dot(n, light), 0.0, 1.0);
+        float spec = pow(clamp(dot(reflect(-light, n), v), 0.0, 1.0), mix(16.0, 64.0, uGlass));
+        vec3 neon = uAccent;
+
+        if (mat < 1.5) {
+          // turf / glass fairway
+          float h = terrainH(pos.xz);
+          float grassAmt = smoothstep(0.02, 0.22, pos.y - h);
+          float g = length(pos.xz - uCup);
+          float onGreen = smoothstep(2.6, 1.0, g);
+          float fair = fairwayMask(pos.xz);
+
+          vec3 turf = vec3(0.04, 0.28, 0.08);
+          vec3 greenPad = vec3(0.08, 0.55, 0.22);
+          vec3 albedo = mix(turf, neon, grassAmt * (0.35 + uHeat * 0.65));
+          albedo = mix(albedo, greenPad, onGreen * 0.85);
+          albedo = mix(albedo, albedo * 1.4 + neon * 0.06, fair * (1.0 - onGreen) * 0.55);
+          albedo = applyGradient(albedo, pos.xz * 0.05 + 0.5);
+
+          col = albedo * (0.10 + diff * 0.92);
+          col += neon * spec * (0.15 + uGlass * 0.55 + uHeat * 0.35);
+          col = applyFresnel(col, n, v);
+
+          float pulse = 0.5 + 0.5 * sin(uTime * 2.2 + pos.x * 0.4);
+          col += neon * uHeat * pulse * grassAmt * 0.18;
+
+          // cup ring beacon
+          float ring = smoothstep(0.16, 0.10, abs(g - 0.16));
+          col += neon * ring * (0.8 + 0.5 * sin(uTime * 3.0)) * onGreen;
+
+          // aim guide — dashed accent line from ball along aim
+          if (uAimLen > 0.01 && uBall.y > -50.0) {
+            vec2 rel = pos.xz - uBall.xz;
+            float along = dot(rel, uAim);
+            float perp = abs(dot(rel, vec2(-uAim.y, uAim.x)));
+            if (along > 0.30 && along < uAimLen && perp < 0.065) {
+              float dash = step(0.45, fract(along * 1.5 - uTime * 1.6));
+              float fade = 1.0 - along / uAimLen;
+              col = mix(col, neon * 2.4, dash * (0.35 + 0.55 * fade));
+            }
+          }
+
+          // soft ball contact shadow
+          if (uBall.y > -50.0) {
+            float sh = smoothstep(0.5, 0.12, length(pos.xz - uBall.xz))
+                     * smoothstep(-0.1, 0.4, uBall.y - pos.y) * 0.55;
+            col *= 1.0 - sh;
+          }
+        } else if (mat < 2.5) {
+          // ball — bright glossy sphere with charge glow
+          vec3 albedo = vec3(0.92, 0.98, 0.94);
+          col = albedo * (0.30 + diff * 0.75);
+          col += vec3(1.0) * pow(clamp(dot(reflect(-light, n), v), 0.0, 1.0), 90.0) * 0.9;
+          float rim = pow(clamp(1.0 - dot(n, v), 0.0, 1.0), 2.2);
+          col += neon * rim * (0.35 + uCharge * 1.6);
+          col += neon * uCharge * 0.35;
+        } else if (mat < 3.5) {
+          // flag pole — dark satin metal
+          col = vec3(0.05, 0.07, 0.06) * (0.4 + diff * 0.6);
+          col += vec3(0.9) * spec * 0.5;
+          col = applyFresnel(col, n, v);
+        } else {
+          // flag — emissive accent banner
+          float pulse = 0.75 + 0.25 * sin(uTime * 2.6);
+          col = neon * (0.55 + diff * 0.45) * 1.6 * pulse;
+          col += vec3(1.0) * spec * 0.25;
+        }
+
+        float fog = 1.0 - exp(-t * 0.042);
+        col = mix(col, vec3(0.012, 0.045, 0.026) + uAccent * 0.02, fog);
+      }
+
+      col *= 1.0 - 0.22 * dot(uv, uv);
+      // filmic highlight roll-off — keeps neon identity, kills flat clipping
+      col = 1.0 - exp(-max(col, 0.0) * 1.45);
+      col = pow(col, vec3(0.92));
+      fragColor = vec4(col, 1.0);
+    }`;
+
+    function compile(type, src) {
+      const s = gl.createShader(type);
+      gl.shaderSource(s, src);
+      gl.compileShader(s);
+      if (!gl.getShaderParameter(s, gl.COMPILE_STATUS))
+        throw new Error(gl.getShaderInfoLog(s) || "shader compile failed");
+      return s;
+    }
+    const prog = gl.createProgram();
+    gl.attachShader(prog, compile(gl.VERTEX_SHADER, VS));
+    gl.attachShader(prog, compile(gl.FRAGMENT_SHADER, FS));
+    gl.linkProgram(prog);
+    if (!gl.getProgramParameter(prog, gl.LINK_STATUS))
+      throw new Error(gl.getProgramInfoLog(prog) || "link failed");
+    gl.useProgram(prog);
+
+    const U = Object.fromEntries(
+      ["uResolution","uTime","uMorph","uFlow","uHeat","uGlass","uPointer","uCamPos","uCamTa",
+       "uSeed","uAmp","uAccent","uCup","uTee","uBall","uAim","uAimLen","uCharge"]
+        .map((n) => [n, gl.getUniformLocation(prog, n)])
+    );
+
+    // ═══ CPU TERRAIN MIRROR (must match GLSL terrainH/groundY) ════
+    function fract(x) { return x - Math.floor(x); }
+    function hash21(x, y) {
+      let px = fract(x * 0.1031), py = fract(y * 0.1031);
+      const pz = px;
+      const d = px * (py + 33.33) + py * (pz + 33.33) + pz * (px + 33.33);
+      px += d; py += d; const pz2 = pz + d;
+      return fract((px + py) * pz2);
+    }
+    function valueNoise(x, y) {
+      const ix = Math.floor(x), iy = Math.floor(y);
+      const fx = x - ix, fy = y - iy;
+      const ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy);
+      const a = hash21(ix, iy), b = hash21(ix + 1, iy);
+      const c = hash21(ix, iy + 1), d = hash21(ix + 1, iy + 1);
+      return (a + (b - a) * ux) + ((c + (d - c) * ux) - (a + (b - a) * ux)) * uy;
+    }
+    function fbm(x, y, oct) {
+      let v = 0, amp = 0.5, f = 1;
+      for (let i = 0; i < oct; i++) { v += amp * valueNoise(x * f, y * f); amp *= 0.5; f *= 2; }
+      return v;
+    }
+    function smoothstepInv(e0, e1, x) {
+      const t = Math.min(1, Math.max(0, (x - e0) / (e1 - e0)));
+      return t * t * (3 - 2 * t);
+    }
+    function terrainH(x, z) {
+      const qx = x + hole.seed[0], qz = z + hole.seed[1];
+      const hills = fbm(qx * 0.085, qz * 0.085, 5);
+      const ridges = fbm(qx * 0.22 + 17.0, qz * 0.22 + 17.0, 3);
+      const amp = (0.55 + (2.35 - 0.55) * state.morph) * hole.amp;
+      return hills * amp + ridges * amp * 0.35 - 0.15;
+    }
+    function groundY(x, z) {
+      const g = Math.hypot(x - hole.cup[0], z - hole.cup[1]);
+      return terrainH(x, z) - smoothstepInv(3.2, 1.1, g) * 0.55;
+    }
+    function groundGrad(x, z) {
+      const e = 0.06;
+      return [
+        (groundY(x + e, z) - groundY(x - e, z)) / (2 * e),
+        (groundY(x, z + e) - groundY(x, z - e)) / (2 * e),
+      ];
+    }
+
+    // ═══ PERSISTENCE ══════════════════════════════════════════════
+    function loadStore() {
+      try { const s = JSON.parse(localStorage.getItem(STORE_KEY)); if (s && s.v === 1) return s; } catch {}
+      return { v: 1, graphics: null, best: {}, bestTotal: null };
+    }
+    const store = loadStore();
+    function saveStore() { try { localStorage.setItem(STORE_KEY, JSON.stringify(store)); } catch {} }
+
+    // ═══ STATE ════════════════════════════════════════════════════
+    const state = { morph: 0.62, flow: 0.48, heat: 0.78, glass: 0.72 };
+    if (store.graphics) Object.assign(state, store.graphics);
+    let hole = HOLES[0];
+    let holeIdx = 0;
+
+    const game = {
+      scene: "title",            // title|select|play|pause|roam|result|score
+      roamFrom: "title",         // where free roam returns to
+      mode: "aim",               // aim|charge|flight|roll|holed  (play sub-mode)
+      strokes: 0,
+      round: {},                 // holeId -> strokes (this round)
+      ball: { x: 0, y: 0, z: 0 },
+      vel: { x: 0, y: 0, z: 0 },
+      lastRest: { x: 0, z: 0 },
+      aimYaw: 0,
+      charge: 0, chargeDir: 1,
+      holedAt: 0,
+      worldTime: 0,
+      paused: false,
+    };
+
+    const cam = {
+      pos: { x: 0, y: 6, z: 13 }, ta: { x: 0, y: 0.6, z: 0 },
+      menuYaw: 0.55, dist: CAM.playDist,
+      roam: { yaw: 0.6, pitch: -0.25, pos: { x: 0, y: 6, z: 13 } },
+    };
+    const pointer = { x: 0, y: 0 };
+
+    // ═══ AUDIO (tiny synth, created on first gesture) ═════════════
+    let actx = null;
+    function audio() {
+      if (!actx) { try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch {} }
+      return actx;
+    }
+    function tone(freq, dur, type = "sine", gain = 0.12, when = 0) {
+      const ctx = audio(); if (!ctx) return;
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = type; o.frequency.value = freq;
+      g.gain.setValueAtTime(gain, ctx.currentTime + when);
+      g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + when + dur);
+      o.connect(g).connect(ctx.destination);
+      o.start(ctx.currentTime + when); o.stop(ctx.currentTime + when + dur + 0.02);
+    }
+    const sfx = {
+      ui: () => tone(1150, 0.05, "sine", 0.05),
+      strike: (p) => { tone(70 + p * 60, 0.11, "square", 0.16); tone(300, 0.05, "sine", 0.06); },
+      bounce: () => tone(210, 0.04, "sine", 0.05),
+      holed: () => { tone(660, 0.3, "sine", 0.12); tone(990, 0.42, "sine", 0.10, 0.09); tone(1320, 0.5, "sine", 0.07, 0.2); },
+    };
+
+    // ═══ SCENE MANAGER ════════════════════════════════════════════
+    const $ = (s) => document.querySelector(s);
+    const veil = $("#veil");
+    const scenes = {
+      title: $("#scene-title"), select: $("#scene-select"), play: $("#scene-play"),
+      pause: $("#scene-pause"), roam: $("#scene-roam"), result: $("#scene-result"), score: $("#scene-score"),
+    };
+    let transitioning = false;
+    function showScene(name) {
+      Object.entries(scenes).forEach(([k, el]) => el.classList.toggle("on", k === name));
+      // pause overlays the play HUD
+      if (name === "pause") scenes.play.classList.add("on");
+      game.scene = name;
+      $("#sceneOut").textContent = name;
+    }
+    function goToScene(name, setup) {
+      if (transitioning) return;
+      transitioning = true;
+      veil.classList.add("show");
+      setTimeout(() => {
+        if (setup) setup();
+        showScene(name);
+        veil.classList.remove("show");
+        setTimeout(() => { transitioning = false; }, 270);
+      }, 270);
+    }
+
+    // ═══ HOLE / ROUND FLOW ════════════════════════════════════════
+    function setHole(i) {
+      holeIdx = ((i % HOLES.length) + HOLES.length) % HOLES.length;
+      hole = HOLES[holeIdx];
+      resetBallToTee();
+      game.strokes = 0;
+      updatePlayHud();
+    }
+    function resetBallToTee() {
+      const [tx, tz] = hole.tee;
+      game.ball = { x: tx, y: groundY(tx, tz) + PHYS.ballRadius, z: tz };
+      game.vel = { x: 0, y: 0, z: 0 };
+      game.lastRest = { x: tx, z: tz };
+      game.aimYaw = Math.atan2(hole.cup[0] - tx, hole.cup[1] - tz);
+      game.mode = "aim";
+      game.charge = 0;
+      $("#meter").classList.remove("live");
+    }
+    function updatePlayHud() {
+      $("#holeNum").textContent = `HOLE ${hole.id}/${HOLES.length}`;
+      $("#holeName").textContent = hole.name;
+      $("#holePar").textContent = String(hole.par);
+      $("#strokeNum").textContent = String(game.strokes);
+    }
+    function gradeFor(strokes, par) {
+      if (strokes === 1) return { label: "ACE!", cls: "gold" };
+      const d = strokes - par;
+      if (d <= -2) return { label: "EAGLE", cls: "gold" };
+      if (d === -1) return { label: "BIRDIE", cls: "" };
+      if (d === 0) return { label: "PAR", cls: "" };
+      if (d === 1) return { label: "BOGEY", cls: "over" };
+      if (d === 2) return { label: "DOUBLE BOGEY", cls: "over" };
+      return { label: `+${d}`, cls: "over" };
+    }
+    function onHoleOut() {
+      game.mode = "holed";
+      game.holedAt = performance.now();
+      game.round[hole.id] = game.strokes;
+      if (!store.best[hole.id] || game.strokes < store.best[hole.id]) store.best[hole.id] = game.strokes;
+      const playedAll = HOLES.every((h) => game.round[h.id] != null);
+      if (playedAll) {
+        const total = HOLES.reduce((s, h) => s + game.round[h.id], 0);
+        if (store.bestTotal == null || total < store.bestTotal) store.bestTotal = total;
+      }
+      saveStore();
+      sfx.holed();
+      const g = gradeFor(game.strokes, hole.par);
+      const rc = $("#rcard");
+      rc.className = `rcard glass e3 ${g.cls}`;
+      $("#rgrade").textContent = g.label;
+      $("#rsub").textContent = `HOLE ${hole.id} · ${game.strokes} STROKE${game.strokes === 1 ? "" : "S"} · PAR ${hole.par}`;
+      goToScene("result");
+      setTimeout(() => { if (game.scene === "result") goToScene("score", buildScorecard); }, 2100);
+    }
+    function buildScorecard() {
+      const t = $("#scTable");
+      let rows = `<tr><th>Hole</th><th>Course</th><th>Par</th><th>Strokes</th><th>±</th><th>Best</th></tr>`;
+      let total = 0, parTotal = 0, played = 0;
+      HOLES.forEach((h, i) => {
+        const s = game.round[h.id];
+        const best = store.best[h.id];
+        let deltaTxt = "—", deltaCls = "";
+        if (s != null) {
+          played++; total += s; parTotal += h.par;
+          const d = s - h.par;
+          deltaTxt = d === 0 ? "E" : d > 0 ? `+${d}` : String(d);
+          deltaCls = d > 0 ? "over" : d < 0 ? "under" : "";
+        }
+        rows += `<tr class="${i === holeIdx ? "now" : ""}"><td><b>${h.id}</b></td><td>${h.name}</td><td>${h.par}</td>` +
+          `<td><b>${s ?? "—"}</b></td><td class="delta ${deltaCls}">${deltaTxt}</td><td class="best">${best ?? "—"}</td></tr>`;
+      });
+      const totD = played ? total - parTotal : 0;
+      const totTxt = played ? (totD === 0 ? "E" : totD > 0 ? `+${totD}` : String(totD)) : "—";
+      rows += `<tr class="total"><td colspan="3">ROUND TOTAL</td><td><b>${played ? total : "—"}</b></td>` +
+        `<td class="delta ${totD > 0 ? "over" : totD < 0 ? "under" : ""}">${totTxt}</td><td class="best">${store.bestTotal ?? "—"}</td></tr>`;
+      t.innerHTML = rows;
+      const allPlayed = HOLES.every((h) => game.round[h.id] != null);
+      $("#btnNext").textContent = allPlayed ? "NEW ROUND" : "NEXT HOLE";
+    }
+
+    // ═══ COURSE SELECT CARDS ══════════════════════════════════════
+    function buildCards() {
+      const wrap = $("#cards");
+      wrap.innerHTML = "";
+      HOLES.forEach((h, i) => {
+        const btn = document.createElement("button");
+        btn.className = "card glass";
+        const cv = document.createElement("canvas");
+        cv.width = 208; cv.height = 118;
+        btn.appendChild(cv);
+        const name = document.createElement("div");
+        name.className = "cname"; name.textContent = h.name;
+        const meta = document.createElement("div");
+        meta.className = "cmeta";
+        meta.innerHTML = `<span>HOLE ${h.id}</span><b>PAR ${h.par}</b><span class="best">BEST ${store.best[h.id] ?? "—"}</span>`;
+        btn.append(name, meta);
+        btn.addEventListener("click", () => { sfx.ui(); startHole(i); });
+        wrap.appendChild(btn);
+        drawThumb(cv, h);
+      });
+    }
+    // CPU heightfield thumbnail with per-hole palette
+    function drawThumb(cv, h) {
+      const ctx = cv.getContext("2d");
+      const img = ctx.createImageData(cv.width, cv.height);
+      const scale = 26 / cv.width; // world units per px (covers ±13)
+      const amp = (0.55 + 1.8 * 0.62) * h.amp;
+      for (let py = 0; py < cv.height; py++) {
+        for (let px = 0; px < cv.width; px++) {
+          const wx = (px - cv.width / 2) * scale * 1.7;
+          const wz = (py - cv.height / 2) * scale * 1.7;
+          const qx = wx + h.seed[0], qz = wz + h.seed[1];
+          const v = fbm(qx * 0.085, qz * 0.085, 4) + fbm(qx * 0.22 + 17, qz * 0.22 + 17, 2) * 0.35;
+          let l = Math.min(1, Math.max(0, v * amp * 0.55 + 0.12));
+          // fairway corridor brightening
+          const ax = h.tee[0], az = h.tee[1], bx = h.cup[0], bz = h.cup[1];
+          const pax = wx - ax, paz = wz - az, bax = bx - ax, baz = bz - az;
+          const tSeg = Math.min(1, Math.max(0, (pax * bax + paz * baz) / (bax * bax + baz * baz)));
+          const dseg = Math.hypot(pax - bax * tSeg, paz - baz * tSeg);
+          const fair = Math.min(1, Math.max(0, (3.6 - dseg) / 2.3));
+          l = l * (1 + fair * 0.65) + fair * 0.06;
+          const idx = (py * cv.width + px) * 4;
+          img.data[idx]     = Math.min(255, 8 + l * h.accent[0] * 235);
+          img.data[idx + 1] = Math.min(255, 16 + l * h.accent[1] * 235);
+          img.data[idx + 2] = Math.min(255, 10 + l * h.accent[2] * 235);
+          img.data[idx + 3] = 255;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+      const w2p = (wx, wz) => [cv.width / 2 + wx / (scale * 1.7), cv.height / 2 + wz / (scale * 1.7)];
+      const [cx, cy] = w2p(h.cup[0], h.cup[1]);
+      const [tx2, ty2] = w2p(h.tee[0], h.tee[1]);
+      ctx.fillStyle = "#ffffff";
+      ctx.beginPath(); ctx.arc(cx, cy, 3, 0, 7); ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,.65)"; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - 9); ctx.stroke();
+      ctx.fillStyle = `rgb(${h.accent[0]*255|0},${h.accent[1]*255|0},${h.accent[2]*255|0})`;
+      ctx.beginPath(); ctx.moveTo(cx, cy - 9); ctx.lineTo(cx + 7, cy - 6.5); ctx.lineTo(cx, cy - 4); ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,.85)";
+      ctx.fillRect(tx2 - 2, ty2 - 2, 4, 4);
+    }
+
+    // ═══ FLOW ACTIONS ═════════════════════════════════════════════
+    function startHole(i, keepRound = true) {
+      goToScene("play", () => {
+        if (!keepRound) game.round = {};
+        setHole(i);
+        game.paused = false;
+        $("#settings").classList.remove("on");
+      });
+    }
+    function toTitle() {
+      goToScene("title", () => { game.paused = false; setHole(0); hideBall(); });
+    }
+    function hideBall() { game.ball.y = -100; }
+    function pauseGame() {
+      game.paused = true;
+      goToScene("pause");
+    }
+    function resumeGame() {
+      goToScene("play", () => { game.paused = false; });
+    }
+    function enterRoam(from) {
+      game.roamFrom = from;
+      game.paused = from === "pause"; // frozen world when entered from pause
+      cam.roam.pos = { ...cam.pos };
+      const dx = cam.ta.x - cam.pos.x, dy = cam.ta.y - cam.pos.y, dz = cam.ta.z - cam.pos.z;
+      cam.roam.yaw = Math.atan2(dx, dz);
+      cam.roam.pitch = Math.atan2(dy, Math.hypot(dx, dz));
+      goToScene("roam");
+    }
+    function exitRoam() {
+      if (game.roamFrom === "pause") goToScene("pause");
+      else toTitle();
+    }
+
+    // ═══ INPUT ════════════════════════════════════════════════════
+    // menu buttons
+    document.querySelectorAll("[data-act]").forEach((el) => {
+      el.addEventListener("click", () => {
+        const act = el.dataset.act;
+        sfx.ui();
+        switch (act) {
+          case "play": game.round = {}; startHole(0); break;
+          case "select": goToScene("select", buildCards); break;
+          case "roam": enterRoam("title"); break;
+          case "settings": toggleSettings(true); break;
+          case "back": toTitle(); break;
+          case "resume": resumeGame(); break;
+          case "freecam": enterRoam("pause"); break;
+          case "restart": goToScene("play", () => { setHole(holeIdx); game.paused = false; }); break;
+          case "quit": toTitle(); break;
+          case "next": {
+            const allPlayed = HOLES.every((h) => game.round[h.id] != null);
+            if (allPlayed) { game.round = {}; startHole(0); }
+            else startHole(holeIdx + 1);
+            break;
+          }
+          case "replay": delete game.round[hole.id]; startHole(holeIdx); break;
+          case "menu": toTitle(); break;
+        }
+      });
+    });
+
+    // keyboard
+    const keys = new Set();
+    addEventListener("keydown", (e) => {
+      if (e.repeat) { keys.add(e.code); return; }
+      keys.add(e.code);
+      if (e.code === "Escape") {
+        e.preventDefault();
+        if (game.scene === "play") pauseGame();
+        else if (game.scene === "pause") resumeGame();
+        else if (game.scene === "roam") exitRoam();
+        else if (game.scene === "select") toTitle();
+        else if (game.scene === "score") toTitle();
+        else if (game.scene === "result") goToScene("score", buildScorecard);
+        return;
+      }
+      if (game.scene === "play" && e.code === "Space") {
+        e.preventDefault();
+        beginCharge();
+      }
+      // arrow-key menu navigation
+      if (["ArrowUp", "ArrowDown"].includes(e.code)) {
+        const nav = document.querySelector(".scene.on [data-nav]");
+        if (nav && game.scene !== "play") {
+          e.preventDefault();
+          const btns = [...nav.querySelectorAll("button")];
+          const i = btns.indexOf(document.activeElement);
+          const n = e.code === "ArrowDown" ? (i + 1) % btns.length : (i - 1 + btns.length) % btns.length;
+          btns[Math.max(0, n)].focus();
+        }
+      }
+    });
+    addEventListener("keyup", (e) => {
+      keys.delete(e.code);
+      if (game.scene === "play" && e.code === "Space") releaseCharge();
+    });
+
+    // pointer — orbit/aim drag + ripple
+    let dragging = false, lastX = 0, lastY = 0, pointerMoves = 0;
+    canvas.addEventListener("pointerdown", (e) => {
+      dragging = true; lastX = e.clientX; lastY = e.clientY;
+      canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener("pointerup", () => { dragging = false; });
+    canvas.addEventListener("pointermove", (e) => {
+      pointerMoves++;
+      pointer.x = (e.clientX / innerWidth) * 2 - 1;
+      pointer.y = -((e.clientY / innerHeight) * 2 - 1);
+      if (!dragging) { lastX = e.clientX; lastY = e.clientY; return; }
+      const dx = e.clientX - lastX, dy = e.clientY - lastY;
+      lastX = e.clientX; lastY = e.clientY;
+      if (game.scene === "play" && (game.mode === "aim" || game.mode === "charge")) {
+        game.aimYaw += dx * 0.005;
+      } else if (game.scene === "roam") {
+        cam.roam.yaw += dx * 0.0042;
+        cam.roam.pitch = Math.min(1.2, Math.max(-1.2, cam.roam.pitch - dy * 0.0035));
+      } else if (game.scene === "title" || game.scene === "select") {
+        cam.menuYaw += dx * 0.005;
+      }
+    });
+    addEventListener("wheel", (e) => {
+      if (game.scene === "play") {
+        cam.dist = Math.min(CAM.distMax, Math.max(CAM.distMin, cam.dist + Math.sign(e.deltaY) * 0.5));
+      } else if (game.scene === "roam") {
+        const s = Math.sign(e.deltaY) * -1.2;
+        cam.roam.pos.x += Math.sin(cam.roam.yaw) * Math.cos(cam.roam.pitch) * s;
+        cam.roam.pos.y += Math.sin(cam.roam.pitch) * s;
+        cam.roam.pos.z += Math.cos(cam.roam.yaw) * Math.cos(cam.roam.pitch) * s;
+      }
+    }, { passive: true });
+
+    // swing button (touch + mouse)
+    const swingBtn = $("#swingBtn");
+    swingBtn.addEventListener("pointerdown", (e) => { e.preventDefault(); beginCharge(); });
+    swingBtn.addEventListener("pointerup", (e) => { e.preventDefault(); releaseCharge(); });
+    swingBtn.addEventListener("pointerleave", () => { if (game.mode === "charge") releaseCharge(); });
+    swingBtn.addEventListener("keydown", (e) => { if (e.code === "Enter") e.preventDefault(); });
+
+    // pause + gear buttons
+    $("#btn-pause").addEventListener("click", () => { sfx.ui(); pauseGame(); });
+    $("#btn-gear").addEventListener("click", () => { sfx.ui(); toggleSettings(); });
+    $("#btnCloseGfx").addEventListener("click", () => { sfx.ui(); toggleSettings(false); });
+    $("#btnResetGfx").addEventListener("click", () => {
+      sfx.ui();
+      setControl("morph", 0.62); setControl("flow", 0.48);
+      setControl("heat", 0.78); setControl("glass", 0.72);
+    });
+    function toggleSettings(force) {
+      const el = $("#settings");
+      const on = force != null ? force : !el.classList.contains("on");
+      el.classList.toggle("on", on);
+    }
+
+    // ═══ SWING METER ══════════════════════════════════════════════
+    function distToCup() {
+      return Math.hypot(hole.cup[0] - game.ball.x, hole.cup[1] - game.ball.z);
+    }
+    function isPutting() { return distToCup() < PHYS.puttRange; }
+    function beginCharge() {
+      if (game.mode !== "aim") return;
+      game.mode = "charge";
+      game.charge = 0; game.chargeDir = 1;
+      $("#meter .mlabel span").textContent = isPutting() ? "PUTT" : "POWER";
+      $("#meter").classList.add("live");
+    }
+    function releaseCharge() {
+      if (game.mode !== "charge") return;
+      const p = game.charge;
+      $("#meter").classList.remove("live");
+      if (p < 0.04) { game.mode = "aim"; return; } // cancelled tap
+      strike(p);
+    }
+    function strike(p) {
+      const putting = isPutting();
+      const sp = putting ? PHYS.puttMin + p * (PHYS.puttMax - PHYS.puttMin)
+                         : PHYS.minPower + p * (PHYS.maxPower - PHYS.minPower);
+      const la = (putting ? PHYS.puttDeg : PHYS.launchDeg) * Math.PI / 180;
+      const dx = Math.sin(game.aimYaw), dz = Math.cos(game.aimYaw);
+      game.lastRest = { x: game.ball.x, z: game.ball.z };
+      game.vel = { x: dx * Math.cos(la) * sp, y: Math.sin(la) * sp, z: dz * Math.cos(la) * sp };
+      game.strokes++;
+      updatePlayHud();
+      game.mode = "flight";
+      game.charge = 0;
+      sfx.strike(p);
+    }
+
+    // ═══ TOAST ════════════════════════════════════════════════════
+    let toastT = 0;
+    function toast(msg) {
+      const el = $("#toast");
+      el.textContent = msg;
+      el.classList.add("show");
+      clearTimeout(toastT);
+      toastT = setTimeout(() => el.classList.remove("show"), 2200);
+    }
+
+    // ═══ PHYSICS ══════════════════════════════════════════════════
+    function physicsStep(dt) {
+      if (game.scene !== "play" || game.paused) return;
+      const b = game.ball, v = game.vel;
+
+      if (game.mode === "charge") {
+        game.charge += game.chargeDir * METER.speed * dt;
+        if (game.charge >= 1) { game.charge = 1; game.chargeDir = -1; }
+        if (game.charge <= 0) { game.charge = 0; game.chargeDir = 1; }
+        $("#mfill").style.width = (game.charge * 100).toFixed(1) + "%";
+        $("#powerPct").textContent = Math.round(game.charge * 100) + "%";
+      }
+
+      if (game.mode === "flight") {
+        v.y -= PHYS.gravity * dt;
+        b.x += v.x * dt; b.y += v.y * dt; b.z += v.z * dt;
+        const gy = groundY(b.x, b.z);
+        if (b.y - PHYS.ballRadius <= gy) {
+          b.y = gy + PHYS.ballRadius;
+          const [gx, gz] = groundGrad(b.x, b.z);
+          let nx = -gx, ny = 1, nz = -gz;
+          const nl = Math.hypot(nx, ny, nz); nx /= nl; ny /= nl; nz /= nl;
+          const vn = v.x * nx + v.y * ny + v.z * nz;
+          if (vn < 0) {
+            v.x -= (1 + PHYS.restitution) * vn * nx;
+            v.y -= (1 + PHYS.restitution) * vn * ny;
+            v.z -= (1 + PHYS.restitution) * vn * nz;
+            v.x *= PHYS.bounceFriction; v.z *= PHYS.bounceFriction;
+            sfx.bounce();
+          }
+          const speed = Math.hypot(v.x, v.y, v.z);
+          if (speed < 2.2 || Math.abs(v.y) < 0.55) { game.mode = "roll"; v.y = 0; }
+        }
+        checkCup(); checkOOB();
+      } else if (game.mode === "roll") {
+        const [gx, gz] = groundGrad(b.x, b.z);
+        v.x -= PHYS.slopeAccel * gx * dt;
+        v.z -= PHYS.slopeAccel * gz * dt;
+        // cup magnetism (arcade assist)
+        const cd = Math.hypot(b.x - hole.cup[0], b.z - hole.cup[1]);
+        if (cd < PHYS.cupAssistRadius && cd > 0.01) {
+          const pull = PHYS.cupAssistPull * (1 - cd / PHYS.cupAssistRadius);
+          v.x += ((hole.cup[0] - b.x) / cd) * pull * dt;
+          v.z += ((hole.cup[1] - b.z) / cd) * pull * dt;
+        }
+        const damp = Math.max(0, 1 - PHYS.rollFriction * dt);
+        v.x *= damp; v.z *= damp;
+        b.x += v.x * dt; b.z += v.z * dt;
+        b.y = groundY(b.x, b.z) + PHYS.ballRadius;
+        checkCup(); checkOOB();
+        if (Math.hypot(v.x, v.z) < PHYS.stopSpeed) {
+          v.x = v.z = 0;
+          game.lastRest = { x: b.x, z: b.z };
+          game.mode = "aim";
+          // auto-aim at the cup after each shot
+          game.aimYaw = Math.atan2(hole.cup[0] - b.x, hole.cup[1] - b.z);
+        }
+      } else if (game.mode === "holed") {
+        // sink animation
+        b.y = Math.max(b.y - dt * 0.5, groundY(hole.cup[0], hole.cup[1]) - 0.12);
+      }
+    }
+    function checkCup() {
+      const b = game.ball;
+      const cd = Math.hypot(b.x - hole.cup[0], b.z - hole.cup[1]);
+      const speed = Math.hypot(game.vel.x, game.vel.y, game.vel.z);
+      const nearGround = b.y - PHYS.ballRadius <= groundY(b.x, b.z) + 0.12;
+      if (cd < PHYS.cupRadius && speed < PHYS.cupCaptureSpeed && nearGround) {
+        b.x = hole.cup[0]; b.z = hole.cup[1];
+        game.vel = { x: 0, y: 0, z: 0 };
+        onHoleOut();
+      }
+    }
+    function checkOOB() {
+      const b = game.ball;
+      if (Math.hypot(b.x, b.z) > PHYS.outOfBounds || b.y < -4) {
+        b.x = game.lastRest.x; b.z = game.lastRest.z;
+        b.y = groundY(b.x, b.z) + PHYS.ballRadius;
+        game.vel = { x: 0, y: 0, z: 0 };
+        game.strokes++;
+        updatePlayHud();
+        game.mode = "aim";
+        game.aimYaw = Math.atan2(hole.cup[0] - b.x, hole.cup[1] - b.z);
+        toast("OUT OF BOUNDS · +1 STROKE");
+      }
+    }
+
+    // ═══ CAMERA ═══════════════════════════════════════════════════
+    function lerp(a, b, k) { return a + (b - a) * k; }
+    function updateCamera(dt) {
+      const k = 1 - Math.exp(-CAM.smooth * dt);
+      let px, py, pz, tx, ty, tz;
+      if (game.scene === "title" || game.scene === "select" || game.scene === "score" || game.scene === "result") {
+        if (!game.paused) cam.menuYaw += CAM.menuYawRate * dt;
+        px = Math.sin(cam.menuYaw) * CAM.menuRadius;
+        py = CAM.menuHeight;
+        pz = Math.cos(cam.menuYaw) * CAM.menuRadius;
+        tx = 0; ty = 0.6; tz = 0;
+        if (game.scene === "result" || game.scene === "score") {
+          // drift around the pin
+          tx = hole.cup[0]; tz = hole.cup[1]; ty = groundY(tx, tz) + 0.6;
+          px = tx + Math.sin(cam.menuYaw) * 6.5; pz = tz + Math.cos(cam.menuYaw) * 6.5;
+          py = ty + 3.2;
+        }
+      } else if (game.scene === "roam") {
+        const fast = keys.has("ShiftLeft") || keys.has("ShiftRight");
+        const sp = (fast ? CAM.roamFast : CAM.roamSpeed) * dt;
+        const cy = Math.cos(cam.roam.yaw), sy = Math.sin(cam.roam.yaw), cp = Math.cos(cam.roam.pitch);
+        if (keys.has("KeyW")) { cam.roam.pos.x += sy * cp * sp; cam.roam.pos.y += Math.sin(cam.roam.pitch) * sp; cam.roam.pos.z += cy * cp * sp; }
+        if (keys.has("KeyS")) { cam.roam.pos.x -= sy * cp * sp; cam.roam.pos.y -= Math.sin(cam.roam.pitch) * sp; cam.roam.pos.z -= cy * cp * sp; }
+        if (keys.has("KeyA")) { cam.roam.pos.x -= cy * sp; cam.roam.pos.z += sy * sp; }
+        if (keys.has("KeyD")) { cam.roam.pos.x += cy * sp; cam.roam.pos.z -= sy * sp; }
+        if (keys.has("KeyQ")) cam.roam.pos.y -= sp;
+        if (keys.has("KeyE")) cam.roam.pos.y += sp;
+        px = cam.roam.pos.x; py = cam.roam.pos.y; pz = cam.roam.pos.z;
+        tx = px + Math.sin(cam.roam.yaw) * Math.cos(cam.roam.pitch);
+        ty = py + Math.sin(cam.roam.pitch);
+        tz = pz + Math.cos(cam.roam.yaw) * Math.cos(cam.roam.pitch);
+        cam.pos = { x: px, y: py, z: pz };
+        cam.ta = { x: tx, y: ty, z: tz };
+        return; // free cam is direct, no smoothing
+      } else {
+        // play / pause — behind-ball camera along aim
+        if (game.scene === "play" && (game.mode === "aim" || game.mode === "charge")) {
+          if (keys.has("ArrowLeft")) game.aimYaw -= 1.6 * dt;
+          if (keys.has("ArrowRight")) game.aimYaw += 1.6 * dt;
+        }
+        const b = game.ball;
+        const dx = Math.sin(game.aimYaw), dz = Math.cos(game.aimYaw);
+        px = b.x - dx * cam.dist; pz = b.z - dz * cam.dist;
+        py = Math.max(b.y + CAM.playHeight, groundY(px, pz) + 0.6);
+        tx = b.x + dx * CAM.lookAhead; tz = b.z + dz * CAM.lookAhead;
+        ty = b.y + CAM.lookUp;
+      }
+      if (game.paused) { return; } // freeze camera under pause menu
+      cam.pos.x = lerp(cam.pos.x, px, k); cam.pos.y = lerp(cam.pos.y, py, k); cam.pos.z = lerp(cam.pos.z, pz, k);
+      cam.ta.x = lerp(cam.ta.x, tx, k); cam.ta.y = lerp(cam.ta.y, ty, k); cam.ta.z = lerp(cam.ta.z, tz, k);
+    }
+
+    // ═══ GRAPHICS SLIDERS (persisted) ═════════════════════════════
+    function paintFill(input) {
+      const p = ((Number(input.value) - 0) / 1) * 100;
+      input.style.setProperty("--p", p.toFixed(2) + "%");
+    }
+    function setControl(name, value) {
+      if (!(name in state)) return;
+      state[name] = Number(value);
+      const input = document.querySelector("#" + name);
+      if (input) { input.value = String(value); input.nextElementSibling.value = Number(value).toFixed(3); paintFill(input); }
+      store.graphics = { ...state };
+      saveStore();
+    }
+    ["morph", "flow", "heat", "glass"].forEach((key) => {
+      const input = document.querySelector("#" + key);
+      input.value = String(state[key]);
+      input.nextElementSibling.value = state[key].toFixed(3);
+      paintFill(input);
+      input.addEventListener("input", () => {
+        state[key] = Number(input.value);
+        input.nextElementSibling.value = state[key].toFixed(3);
+        paintFill(input);
+        store.graphics = { ...state };
+        saveStore();
+      });
+    });
+
+    // ═══ RESIZE + RENDER LOOP ═════════════════════════════════════
+    let dprScale = 1; // adaptive render-resolution scale (perf safeguard)
+    function resize() {
+      const dpr = Math.min(devicePixelRatio || 1, 2) * dprScale;
+      canvas.width = Math.max(2, Math.floor(innerWidth * dpr));
+      canvas.height = Math.max(2, Math.floor(innerHeight * dpr));
+      gl.viewport(0, 0, canvas.width, canvas.height);
+    }
+    addEventListener("resize", resize);
+    resize();
+
+    const fpsOut = $("#fpsOut");
+    let fps = 0, fpsFrames = 0, fpsT = performance.now(), frames = 0;
+    let prevNow = performance.now();
+
+    function frame(now) {
+      const dt = Math.min(0.05, (now - prevNow) / 1000);
+      prevNow = now;
+      if (!game.paused) game.worldTime += dt;
+
+      physicsStep(dt);
+      updateCamera(dt);
+
+      const aiming = game.scene === "play" && (game.mode === "aim" || game.mode === "charge");
+      let aimLen = 0;
+      if (aiming) {
+        if (game.mode === "charge") {
+          if (isPutting()) {
+            const sp = PHYS.puttMin + game.charge * (PHYS.puttMax - PHYS.puttMin);
+            aimLen = Math.max(0.7, sp / PHYS.rollFriction);
+          } else {
+            const sp = PHYS.minPower + game.charge * (PHYS.maxPower - PHYS.minPower);
+            aimLen = Math.max(1.2, sp * sp * Math.sin(2 * PHYS.launchDeg * Math.PI / 180) / PHYS.gravity * 0.92);
+          }
+        } else {
+          aimLen = isPutting() ? 1.8 : 3.0;
+        }
+      }
+
+      gl.uniform2f(U.uResolution, canvas.width, canvas.height);
+      gl.uniform1f(U.uTime, game.worldTime);
+      gl.uniform1f(U.uMorph, state.morph);
+      gl.uniform1f(U.uFlow, state.flow);
+      gl.uniform1f(U.uHeat, state.heat);
+      gl.uniform1f(U.uGlass, state.glass);
+      gl.uniform2f(U.uPointer, pointer.x, pointer.y);
+      gl.uniform3f(U.uCamPos, cam.pos.x, cam.pos.y, cam.pos.z);
+      gl.uniform3f(U.uCamTa, cam.ta.x, cam.ta.y, cam.ta.z);
+      gl.uniform2f(U.uSeed, hole.seed[0], hole.seed[1]);
+      gl.uniform1f(U.uAmp, hole.amp);
+      gl.uniform3f(U.uAccent, hole.accent[0], hole.accent[1], hole.accent[2]);
+      gl.uniform2f(U.uCup, hole.cup[0], hole.cup[1]);
+      gl.uniform2f(U.uTee, hole.tee[0], hole.tee[1]);
+      gl.uniform3f(U.uBall, game.ball.x, game.ball.y, game.ball.z);
+      gl.uniform2f(U.uAim, Math.sin(game.aimYaw), Math.cos(game.aimYaw));
+      gl.uniform1f(U.uAimLen, aimLen);
+      gl.uniform1f(U.uCharge, game.mode === "charge" ? game.charge : 0);
+      gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+      frames++; fpsFrames++;
+      if (now - fpsT >= 500) {
+        fps = (fpsFrames * 1000) / (now - fpsT);
+        fpsOut.textContent = fps.toFixed(0);
+        fpsFrames = 0; fpsT = now;
+        // adaptive resolution: trade pixels for framerate, recover when idle
+        if (fps < 30 && dprScale > 0.45) { dprScale = Math.max(0.45, dprScale * 0.82); resize(); }
+        else if (fps > 56 && dprScale < 1) { dprScale = Math.min(1, dprScale * 1.08); resize(); }
+      }
+      requestAnimationFrame(frame);
+    }
+
+    // ═══ BOOT ═════════════════════════════════════════════════════
+    $("#msweet").style.left = (METER.sweet * 100) + "%";
+    setHole(0);
+    hideBall();
+    showScene("title");
+    // initial camera = menu flyby position (no lerp pop)
+    cam.pos = { x: Math.sin(cam.menuYaw) * CAM.menuRadius, y: CAM.menuHeight, z: Math.cos(cam.menuYaw) * CAM.menuRadius };
+    cam.ta = { x: 0, y: 0.6, z: 0 };
+    requestAnimationFrame(frame);
+
+    // ═══ PUBLIC API (RelayVanguardGolf contract, extended) ════════
+    window.RelayVanguardGolf = {
+      setControl,
+      getState: () => ({
+        frames, pointerMoves, fps, ...state,
+        scene: game.scene, mode: game.mode,
+        hole: { id: hole.id, name: hole.name, par: hole.par, cup: [...hole.cup], tee: [...hole.tee] },
+        strokes: game.strokes,
+        ball: { ...game.ball }, vel: { ...game.vel },
+        aimYaw: game.aimYaw, charge: game.charge,
+        cam: { pos: { ...cam.pos }, ta: { ...cam.ta } },
+        pointer: { ...pointer },
+        time: game.worldTime,
+      }),
+      getScene: () => game.scene,
+      goToScene: (name) => {
+        switch (name) {
+          case "title": toTitle(); break;
+          case "select": goToScene("select", buildCards); break;
+          case "play": startHole(holeIdx); break;
+          case "pause": if (game.scene === "play") pauseGame(); break;
+          case "roam": case "freeroam": enterRoam(game.scene === "pause" ? "pause" : "title"); break;
+          case "score": case "scorecard": goToScene("score", buildScorecard); break;
+          default: return false;
+        }
+        return true;
+      },
+      getScore: () => ({
+        round: { ...game.round },
+        best: { ...store.best },
+        bestTotal: store.bestTotal,
+        currentHole: hole.id,
+        strokes: game.strokes,
+      }),
+    };
+  </script>
+</body>
+</html>

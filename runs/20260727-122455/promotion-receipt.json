@@ -1,0 +1,43 @@
+{
+  "run": "20260727-122455",
+  "objective": "glassy layered SDF grass neon hilly golf course via Vanguard Uber lineage",
+  "receiptCreatedAt": "2026-07-27T14:40:00-04:00",
+  "hashAlgorithm": "SHA256 (Get-FileHash, computed 2026-07-27T14:17-04:00)",
+  "inputs": {
+    "runtime/vanguard-golf-sdf-v1/index.html (exact-runtime master, frozen)": "93A02BB5721E71684A392810002BC4D0A3CC051660D358EDBBEF11F70A1CC61F",
+    "deploy/vanguard-golf-sdf-v1/index.html (deployed copy)": "93A02BB5721E71684A392810002BC4D0A3CC051660D358EDBBEF11F70A1CC61F",
+    "lineage VanguardUber.shader (VanguardShaderLab_2026-07-25)": "C374F76CF213E43F71434FDC4A0A85BFF2BA5DB25E7B3C893D0ED5C15F50FBA8",
+    "lineage VanguardNoise.hlsl (VanguardShaderLab_2026-07-25)": "03DD14F76EE42982AD2418F84EC8B6A2B21A2ACE3D9AEE572DEA1AEE86B55535"
+  },
+  "outputs": {
+    "unity VanguardGolfSDF_v1.shader (VanguardShaderLab_GolfSDF_v1_2026-07-27)": "6240790C345B5C4BA9CEDD9D3A490D34D681D3F1CEB3A5CA06C3C02193EF53AC",
+    "unity VanguardGolfSDF_v1.hlsl (VanguardShaderLab_GolfSDF_v1_2026-07-27)": "A7EF2F06665D43CBE36B1A5179A8B4819ED3BCE223D4F6536009CED54A581A69",
+    "unreal VanguardGolfSDF_v1.ush (OrbitShaderEngine_UE58/Shaders)": "658A7C29701B66DB8E487691736AF69471AC61D362677BD1DDCC8177EE85ECEC",
+    "unreal GlslCompat.ush (OrbitShaderEngine_UE58/Shaders)": "EC9520C031736E67DEF3D3241E9813A9A7DBA33A648C00CC2E0C414D7F43D4FB",
+    "evidence/05-unity-golfsdf-v1.png": "285D8FE0AA84E6F986FFF3CB53D19EB64988AD0F787CAA2FD091958816DD624C",
+    "evidence/06-live-A-defaults.png": "30B6AE085977A832D82C8F01E85D63AD6EC129D1EF4935AC15786CF69E5EE417",
+    "evidence/07-live-B-animated.png": "D2C996B56F6156BCB61D580CEC71B91DFE17A9320A8AFA68AD7DA8C3BFC87ECF",
+    "evidence/08-live-C-setcontrol.png": "9C21FEB8E93F1EE027FE57755BB15D9BCB54858E0744E0A24400ADE659644EC5",
+    "evidence/09-live-D-orbit-drag.png": "1A6CDCD8D6C062DFF8436687ACF06C28C4895FEC9D649AF70F1886E0CE5C3E52"
+  },
+  "liveVerification": {
+    "method": "Playwright Chromium against https://vanguard-golf-sdf-v1.vercel.app, 2026-07-27 ~14:22-04:00; state sampled via window.RelayVanguardGolf.getState(); real page.mouse events for pointer/drag; console read via browser_console_messages; HTTP body re-fetched via Invoke-WebRequest and SHA256-hashed",
+    "httpCheck": "200 text/html; charset=utf-8, body 15011 bytes, body sha256 identical to disk master (byte-identical deploy confirmed independently)"
+  },
+  "gates": {
+    "sourceVisiblyRuns": { "result": "PASS", "evidence": "evidence/06-live-A-defaults.png — neon SDF golf course renders with HUD, status 'Live SDF golf course running'" },
+    "animationAdvances": { "result": "PASS", "evidence": "getState frames 213->532, uTime 27.9607->69.9501 between two samples; evidence/06 vs evidence/07 screenshots taken across the interval" },
+    "pointerTouchInput": { "result": "PASS", "evidence": "real page.mouse move+drag over canvas: pointerMoves 0->16, pointer (0.200,-0.133), orbit yaw 0.55->1.15 pitch 0.18->0.38; evidence/09-live-D-orbit-drag.png shows rotated view" },
+    "sharedVariablesRespond": { "result": "PASS", "evidence": "RelayVanguardGolf.setControl drove morph/flow/heat/glass to .95/.90/1.00/.15; getState and DOM sliders both reflect the values; evidence/08-live-C-setcontrol.png visibly differs (glass sheen reduced, terrain amplified)" },
+    "cleanBrowserLogs": { "result": "PASS", "evidence": "browser_console_messages after full session: 0 messages, 0 errors, 0 warnings" },
+    "provenancePinned": { "result": "PASS", "evidence": "all lineage + variant files hashed above; master/deploy/live-body sha256 all identical; single-file runtime with zero external dependencies" },
+    "exactRuntimeHostedLive": { "result": "PASS", "evidence": "HTTP 200 at https://vanguard-golf-sdf-v1.vercel.app, live body sha256 == frozen master sha256; deployment record in manifest.md (dpl_nVkv5ddm8ZhXzA5qjso33ydsJh2m)" },
+    "unityDestinationVerified": { "result": "PASS", "evidence": "manifest.md Unity section: ShaderUtil 0 errors/0 warnings, isSupported=True, render pixel stats non-trivial, exit code 0; evidence/05-unity-golfsdf-v1.png hash recomputed this pass and matches the manifest record; labeled native variant, not claimed exact" },
+    "unrealDestinationCompile": { "result": "PENDING", "evidence": "unreal-import.md — .ush authored and hashed, but no UE 5.8 compile observed; UnrealClaudeMCP bridge unreachable (127.0.0.1:18888 connection refused, 2026-07-27T14:21-04:00); reproduction steps recorded; dialect compatibility NOT claimed" },
+    "fidelityLossesDisclosed": { "result": "PASS", "evidence": "unity-runtime.md (labeled port, time origin, input plumbing) and unreal-import.md (tonemapper, parameters, compiler) disclose every loss" }
+  },
+  "anomalies": [
+    "manifest.md deployment verification records the live HTTP body as 14868 bytes; measured today at 15011 bytes (uncompressed), which matches the disk file exactly and hashes to the recorded sha256. The recorded hash and identity claims are correct; only the earlier byte count was off.",
+    "manifest.md cites the UE variant by its virtual path /RefractShaders/VanguardGolfSDF_v1.ush; the on-disk location is OrbitShaderEngine_UE58/Shaders/VanguardGolfSDF_v1.ush (the module maps Shaders/ to /RefractShaders). Same file, both spellings recorded."
+  ]
+}

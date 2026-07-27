@@ -1,0 +1,42 @@
+{
+  "schemaVersion": "refract.visual-behavior/1",
+  "id": "organic-glow-instrument",
+  "name": "Organic Glow Instrument",
+  "type": "screen",
+  "source": {
+    "fragmentPath": "C:\\Users\\joeyw\\Desktop\\Refract_Motion_Studio_v3\\organic_glow_blob.frag.glsl",
+    "figmaFileKey": "aiPF1x0ZwNOLHLiSi6AkOQ",
+    "figmaNodeId": null,
+    "splineScene": "https://prod.spline.design/9iDxAeZvFP613YL5/scene.splinecode",
+    "studioPath": "C:\\Users\\joeyw\\Desktop\\Refract_Motion_Studio_v3\\lab_site\\index.html"
+  },
+  "shader": {
+    "contract": "main",
+    "vertex": "varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position,1.0); }",
+    "colorSpace": "linear-workflow / display-sRGB",
+    "alpha": "emissive luminance alpha"
+  },
+  "controls": {
+    "morph": { "uniform": "uMorph", "type": "float", "default": 0.55, "min": 0, "max": 1, "step": 0.01, "keyframeable": true },
+    "flow": { "uniform": "uFlow", "type": "float", "default": 0.6, "min": 0, "max": 1, "step": 0.01, "keyframeable": true },
+    "heat": { "uniform": "uHeat", "type": "float", "default": 0.65, "min": 0, "max": 1, "step": 0.01, "keyframeable": true },
+    "pointer": { "uniform": "uPointer", "type": "vec2", "default": [0, 0], "keyframeable": true },
+    "grab": { "uniform": "uGrab", "type": "float", "default": 0, "min": 0, "max": 1, "step": 0.01, "keyframeable": true },
+    "stretch": { "uniform": "uStretch", "type": "vec2", "default": [0, 0], "keyframeable": true },
+    "twist": { "uniform": "uTwist", "type": "float", "default": 0, "min": -3.2, "max": 3.2, "step": 0.01, "keyframeable": true },
+    "scale": { "uniform": "uScale", "type": "float", "default": 1, "min": 0.35, "max": 3, "step": 0.01, "keyframeable": true }
+  },
+  "interactions": {
+    "grab": { "gesture": "pointer-down", "control": "grab" },
+    "stretch": { "gesture": "drag", "controls": ["pointer", "stretch"] },
+    "twist": { "gesture": "shift-drag or secondary-drag", "control": "twist" },
+    "scale": { "gesture": "wheel or pinch", "control": "scale" },
+    "release": { "behavior": "underdamped spring to neutral pose" }
+  },
+  "destinations": {
+    "web": { "mode": "native-glsl", "status": "candidate" },
+    "figma": { "mode": "shader-fill-subset", "status": "source-linked" },
+    "spline": { "mode": "runtime-variables", "requiredVariables": ["morph", "flow", "heat", "grab", "stretchX", "stretchY", "twist", "scale"], "status": "candidate" },
+    "unreal": { "mode": "material-custom-hlsl-or-bake", "project": "C:\\UEProjects\\Lyra_5.7\\Lyra.uproject", "status": "translation-required" }
+  }
+}

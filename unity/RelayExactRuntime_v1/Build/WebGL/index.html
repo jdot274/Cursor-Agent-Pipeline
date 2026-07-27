@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Relay Exact Runtime</title>
+  <link rel="shortcut icon" href="TemplateData/favicon.ico">
+  <style>
+    html,body{width:100%;height:100%;margin:0;overflow:hidden;background:#050505;color:#f4f1ea;font-family:Inter,system-ui,sans-serif}
+    #unity-container,#unity-canvas,#exact-runtime-frame{position:fixed;inset:0;width:100%;height:100%;border:0}
+    #unity-canvas{background:#050505}#exact-runtime-frame{z-index:10;background:#050505;transition:opacity .25s ease}
+    #unity-loading-bar{position:fixed;z-index:30;left:50%;top:50%;width:240px;transform:translate(-50%,-50%);padding:14px;border:1px solid #292824;border-radius:14px;background:#111}
+    #unity-progress-bar-empty{height:4px;background:#242321;border-radius:99px;overflow:hidden}#unity-progress-bar-full{height:100%;width:0;background:#ff7a1a}
+    #relay-host-controls{position:fixed;z-index:50;right:16px;top:16px;display:flex;gap:6px;padding:6px;border:1px solid #2a2926;border-radius:13px;background:#0d0d0ccc;backdrop-filter:blur(18px)}
+    #relay-host-controls button{border:1px solid #2a2926;border-radius:8px;background:#171715;color:#d8d2c9;padding:8px 10px;font:700 9px/1 ui-monospace,monospace;letter-spacing:.08em;cursor:pointer}
+    #relay-host-controls button.active{border-color:#6e4a2e;background:#261912;color:#ffad71}
+    #unity-warning{position:fixed;z-index:80;top:0;left:0;right:0;text-align:center}
+  </style>
+</head>
+<body>
+  <div id="unity-container">
+    <canvas id="unity-canvas" width=960 height=600 tabindex="-1"></canvas>
+    <div id="unity-loading-bar"><p>Starting Unity 6 host…</p><div id="unity-progress-bar-empty"><div id="unity-progress-bar-full"></div></div></div>
+    <div id="unity-warning"></div>
+  </div>
+  <iframe id="exact-runtime-frame" src="ExactRuntime/index.html" title="Relay exact source runtime" allow="autoplay; fullscreen; gamepad; xr-spatial-tracking"></iframe>
+  <nav id="relay-host-controls" aria-label="Unity exact runtime view">
+    <button data-mode="spline" class="active">EXACT SOURCE</button>
+    <button data-mode="unity">UNITY WORLD</button>
+    <button data-mode="composite">COMPOSITE</button>
+  </nav>
+
+  <script>
+    var canvas = document.querySelector("#unity-canvas");
+    var exactFrame = document.querySelector("#exact-runtime-frame");
+    var unityInstance = null;
+
+    function unityShowBanner(message, type) {
+      var warning = document.querySelector("#unity-warning");
+      var item = document.createElement("div");
+      item.textContent = message;
+      item.style.cssText = "padding:10px;background:" + (type === "error" ? "#8b1d17" : "#5d4918");
+      warning.appendChild(item);
+      if (type !== "error") setTimeout(function () { item.remove(); }, 5000);
+    }
+
+    function childRuntime() {
+      try { return exactFrame.contentWindow.RelayExactRuntime; } catch { return null; }
+    }
+
+    function setHostMode(mode) {
+      var exactVisible = mode !== "unity";
+      exactFrame.style.display = exactVisible ? "block" : "none";
+      exactFrame.style.opacity = mode === "composite" ? ".84" : "1";
+      exactFrame.style.pointerEvents = exactVisible ? "auto" : "none";
+      document.querySelectorAll("#relay-host-controls button").forEach(function (button) {
+        button.classList.toggle("active", button.dataset.mode === mode || (mode === "shadertoy" && button.dataset.mode === "spline"));
+      });
+      if (mode === "spline" || mode === "shadertoy") childRuntime()?.setMode(mode);
+    }
+
+    window.RelayExactHost = {
+      setMode: setHostMode,
+      loadSpline: function (url) {
+        setHostMode("spline");
+        childRuntime()?.loadSpline(url);
+      },
+      loadShadertoy: function (id) {
+        setHostMode("shadertoy");
+        childRuntime()?.loadShadertoy(id);
+      },
+      setControl: function (name, value) {
+        childRuntime()?.setControl(name, value);
+      }
+    };
+
+    document.querySelectorAll("#relay-host-controls button").forEach(function (button) {
+      button.addEventListener("click", function () { setHostMode(button.dataset.mode); });
+    });
+
+    var buildUrl = "Build";
+    var loaderUrl = buildUrl + "/WebGL.loader.js";
+    var config = {
+      arguments: [],
+      dataUrl: buildUrl + "/WebGL.data",
+      frameworkUrl: buildUrl + "/WebGL.framework.js",
+      codeUrl: buildUrl + "/WebGL.wasm",
+      streamingAssetsUrl: "StreamingAssets",
+      companyName: "REFRACT",
+      productName: "Relay Exact Runtime",
+      productVersion: "1.0.0",
+      showBanner: unityShowBanner
+    };
+
+    config.matchWebGLToCanvasSize = true;
+    if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) config.devicePixelRatio = 1;
+
+    var script = document.createElement("script");
+    script.src = loaderUrl;
+    script.onload = function () {
+      createUnityInstance(canvas, config, function (progress) {
+        document.querySelector("#unity-progress-bar-full").style.width = (progress * 100) + "%";
+      }).then(function (instance) {
+        unityInstance = instance;
+        document.querySelector("#unity-loading-bar").style.display = "none";
+      }).catch(function (error) {
+        unityShowBanner(String(error), "error");
+      });
+    };
+    document.body.appendChild(script);
+  </script>
+</body>
+</html>

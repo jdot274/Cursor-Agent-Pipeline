@@ -1,0 +1,99 @@
+# Secrets / credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.ppk
+*.key
+credentials.json
+secrets.json
+.npmrc
+.pypirc
+.netrc
+auth.json
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json.example
+
+# Unity (if nested projects land here)
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+*.csproj
+*.unityproj
+*.sln
+*.suo
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.pidb.meta
+*.pdb.meta
+*.mdb.meta
+sysinfo.txt
+crashlytics-build.properties
+**/MemoryCaptures/
+**/Recordings/
+
+# Unreal (if nested)
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+*.xcworkspace
+*.xcodeproj
+
+# Local caches / evidence noise
+*.log
+!runs/**/manifest.md
+.cache/
+tmp/
+temp/
+
+# Vercel local
+.vercel/
+
+# Browser automation profiles (Playwright/Chrome local junk)
+**/.chrome-profile/
+**/chrome-profile/
+**/.playwright/
+**/playwright-report/
+**/test-results/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Nested UI app build/cache
+ui/node_modules/
+ui/dist/
+ui/build/
+ui/.wrangler/
+ui/.vinext/
+ui/.openai/
+ui/*.log
