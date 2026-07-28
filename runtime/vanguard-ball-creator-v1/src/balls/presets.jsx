@@ -12,6 +12,10 @@ import {
   VARYINGS_FRAG_HEADER,
   RAW_VERT,
 } from './shaderLib.js'
+import { COLLAGE_PRESETS } from './collage.jsx'
+import { VAULT_PRESET } from './vault.jsx'
+import { AETHER_PRESET } from './aether.jsx'
+import { ThresholdBall } from '../spline/ThresholdSphere.jsx'
 
 const R = 0.75 // shared ball radius
 
@@ -594,10 +598,6 @@ function HoloBall({ accent, speed }) {
   )
 }
 
-import { COLLAGE_PRESETS } from './collage.jsx'
-import { VAULT_PRESET } from './vault.jsx'
-import { AETHER_PRESET } from './aether.jsx'
-
 export const PRESETS = {
   emerald: {
     name: 'Vanguard Emerald',
@@ -658,4 +658,11 @@ export const PRESETS = {
   ...COLLAGE_PRESETS,
   ...VAULT_PRESET,
   ...AETHER_PRESET,
+  threshold: {
+    name: 'Threshold Sphere',
+    tagline: 'Spline isolate · liquid metal · no UI chrome',
+    chip: 'linear-gradient(135deg,#000000,#1a1a1a 40%,#6a6a6a 70%,#ffffff)',
+    env: 1.2,
+    Component: ThresholdBall,
+  },
 }

@@ -11,13 +11,19 @@ const SWATCHES = ['#3aff8e', '#00e5ff', '#1a8cff', '#6ad0ff', '#c04df0', '#ff9d2
 const GROUPS = [
   { title: 'Tournament', ids: ['emerald', 'ghost', 'oilslick', 'nebula', 'molten', 'pearl', 'chrome', 'holo'] },
   { title: 'Studio / Collage', ids: ['organic', 'plasma', 'points', 'topo', 'cel', 'energy', 'vault', 'aether'] },
+  { title: 'Spline / Level', ids: ['threshold'] },
 ]
 
 export default function App() {
-  const [config, setConfig] = useState(loadBallConfig)
+  const [config, setConfig] = useState(() => ({
+    ...loadBallConfig(),
+    showThresholdProp: false,
+  }))
   const [engine, setEngine] = useState(loadEngine)
   const [toast, setToast] = useState('')
   const [showEngine, setShowEngine] = useState(true)
+  const [editMode, setEditMode] = useState(true)
+  const [gizmoMode, setGizmoMode] = useState('translate')
   const toastTimer = useRef(null)
 
   useEffect(() => {
@@ -27,6 +33,8 @@ export default function App() {
       setPreset: (preset) => setConfig((c) => ({ ...c, preset })),
       setAccent: (accent) => setConfig((c) => ({ ...c, accent })),
       setEngine: (patch) => setEngine((e) => ({ ...e, ...patch })),
+      setEditMode,
+      setGizmoMode,
       save: () => saveBallConfig(config),
       presets: Object.keys(PRESETS),
     }
@@ -66,14 +74,19 @@ export default function App() {
         camera={{ position: [0, 1.15, 4.4], fov: 38 }}
         gl={{ antialias: true }}
       >
-        <Studio config={config} engine={engine} />
+        <Studio
+          config={config}
+          engine={engine}
+          editMode={editMode}
+          gizmoMode={gizmoMode}
+        />
       </Canvas>
 
       <header className="brand">
         <h1>
           VANGUARD <span>BALL LAB</span>
         </h1>
-        <p>shader engine · craft your tournament ball</p>
+        <p>engine shell · gizmos · spline isolate · shaders</p>
       </header>
 
       <aside className="panel">
@@ -85,6 +98,38 @@ export default function App() {
             onChange={(e) => update({ name: e.target.value.toUpperCase() })}
             spellCheck={false}
           />
+        </label>
+
+        <div className="label">Engine edit</div>
+        <div className="row-btns">
+          <button
+            type="button"
+            className={`chip-btn ${editMode ? 'active' : ''}`}
+            onClick={() => setEditMode((v) => !v)}
+          >
+            {editMode ? 'GIZMOS ON' : 'GIZMOS OFF'}
+          </button>
+          {['translate', 'rotate', 'scale'].map((m) => (
+            <button
+              key={m}
+              type="button"
+              className={`chip-btn ${gizmoMode === m ? 'active' : ''}`}
+              onClick={() => setGizmoMode(m)}
+              disabled={!editMode}
+            >
+              {m.slice(0, 1).toUpperCase()}
+            </button>
+          ))}
+        </div>
+        <p className="hint">Click ball / pedestal / threshold prop · drag gizmo</p>
+
+        <label className="check">
+          <input
+            type="checkbox"
+            checked={!!config.showThresholdProp}
+            onChange={(e) => update({ showThresholdProp: e.target.checked })}
+          />
+          Place Threshold Sphere as level prop
         </label>
 
         {GROUPS.map((g) => (
@@ -146,8 +191,12 @@ export default function App() {
         </label>
 
         <button className="ghost-btn" type="button" onClick={() => setShowEngine((v) => !v)}>
-          {showEngine ? 'HIDE ENGINE' : 'SHOW ENGINE'}
+          {showEngine ? 'HIDE TWEAKPANE' : 'SHOW TWEAKPANE'}
         </button>
+
+        <a className="ghost-btn linkish" href="./transparent.html">
+          OPEN TRANSPARENT SPHERE
+        </a>
 
         <button className="cta" onClick={saveAndPlay}>
           SAVE &amp; PLAY
@@ -161,8 +210,11 @@ export default function App() {
       {toast && <div className="toast">{toast}</div>}
 
       <footer className="foot">
-        <span>{PRESETS[config.preset]?.name ?? ''} · {Object.keys(PRESETS).length} shaders</span>
-        <span>drag orbit · scroll zoom · tweakpane engine</span>
+        <span>
+          {PRESETS[config.preset]?.name ?? ''} · {Object.keys(PRESETS).length} shaders
+          {editMode ? ' · EDIT' : ''}
+        </span>
+        <span>click select · gizmo move · orbit · tweakpane</span>
       </footer>
     </div>
   )

@@ -63,4 +63,5 @@ export const PRESET_KNOBS = {
   energy: ['intensity', 'glow', 'noiseScale', 'scanSpeed', 'displacement'],
   vault: ['intensity', 'glow', 'noiseScale', 'scanSpeed', 'thickness'],
   aether: ['intensity', 'glow', 'noiseScale', 'scanSpeed', 'rimPower'],
+  threshold: ['intensity', 'glow'],
 }

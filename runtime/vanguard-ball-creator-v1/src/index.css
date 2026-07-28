@@ -152,8 +152,33 @@ input[type='range'] {
   font: 700 11px 'Sora', sans-serif;
   letter-spacing: 0.2em;
   cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  display: block;
 }
 .ghost-btn:hover { color: var(--ink); border-color: rgba(58, 255, 142, 0.35); }
+.ghost-btn.linkish { letter-spacing: 0.12em; }
+
+.row-btns { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip-btn {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--edge);
+  background: rgba(0,0,0,0.35);
+  color: var(--dim);
+  font: 700 10px 'Sora', sans-serif;
+  letter-spacing: 0.12em;
+  cursor: pointer;
+}
+.chip-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+.chip-btn.active { border-color: rgba(58,255,142,0.55); color: var(--ink); background: rgba(58,255,142,0.1); }
+.hint { font-size: 10px; color: var(--dim); letter-spacing: 0.06em; margin-top: -4px; }
+.check {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--dim); letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.check input { accent-color: #3aff8e; }
 
 .engine-pane {
   position: absolute;
